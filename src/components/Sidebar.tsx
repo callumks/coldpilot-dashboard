@@ -63,15 +63,47 @@ export default function Sidebar() {
           <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-all">
             <UserButton 
               appearance={{
+                variables: {
+                  colorPrimary: '#3b82f6',
+                  colorBackground: '#111111',
+                  colorInputBackground: '#1a1a1a',
+                  colorInputText: '#ffffff',
+                  colorText: '#ffffff',
+                  colorTextSecondary: '#9ca3af',
+                  colorShimmer: '#374151',
+                  colorSuccess: '#10b981',
+                  colorWarning: '#f59e0b',
+                  colorDanger: '#ef4444',
+                  borderRadius: '0.75rem',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                },
                 elements: {
                   avatarBox: "w-8 h-8",
-                  userButtonPopover: "bg-[#111] border border-gray-800",
-                  userButtonPopoverCard: "bg-[#111]",
-                  userButtonPopoverActions: "bg-[#111]"
+                  userButtonPopover: "bg-[#111111] border border-gray-800 shadow-2xl",
+                  userButtonPopoverCard: "bg-[#111111]",
+                  userButtonPopoverActions: "bg-[#111111]",
+                  userButtonPopoverActionButton: "text-gray-300 hover:text-white hover:bg-white/5",
+                  userButtonPopoverActionButtonText: "text-gray-300",
+                  userButtonPopoverFooter: "bg-[#111111] border-t border-gray-800",
+                  modalContent: "bg-[#111111] border border-gray-800",
+                  modalCloseButton: "text-gray-400 hover:text-white",
+                  card: "bg-[#111111] border border-gray-800 shadow-2xl",
+                  navbar: "bg-[#0a0a0a] border-r border-gray-800",
+                  pageScrollBox: "bg-[#111111]",
+                  page: "bg-[#111111]",
+                  profileSectionTitle: "text-white",
+                  profileSectionTitleText: "text-white",
+                  profileSectionContent: "text-gray-300",
+                  formFieldLabel: "text-gray-300 font-medium",
+                  formFieldInput: "bg-[#1a1a1a] border-gray-700 text-white placeholder-gray-500 focus:border-blue-500",
+                  formButtonPrimary: "bg-blue-500 hover:bg-blue-600 text-white font-medium",
+                  formButtonSecondary: "border-gray-700 text-gray-300 hover:bg-white/5",
+                  badge: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                  alert: "bg-gray-800 border-gray-700 text-gray-300",
+                  alertText: "text-gray-300",
                 }
               }}
-              userProfileMode="navigation"
-              userProfileUrl="/profile"
+              userProfileMode="modal"
             />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">
