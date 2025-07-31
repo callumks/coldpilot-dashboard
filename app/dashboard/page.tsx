@@ -129,9 +129,11 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16 w-full">
+      <div className="flex flex-col sm:flex-row gap-4 mb-16 w-full">
         {statData.map((stat, index) => (
-          <StatCard key={index} {...stat} />
+          <div key={index} className="flex-1 min-w-0">
+            <StatCard {...stat} />
+          </div>
         ))}
       </div>
 
