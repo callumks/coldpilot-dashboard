@@ -37,4 +37,7 @@ export default function HomePage() {
       </div>
     </div>
   );
-} 
+}
+
+// Prevent static generation for this page since it uses client-side auth
+export const dynamic = 'force-dynamic'; 

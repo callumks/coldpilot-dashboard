@@ -92,7 +92,7 @@ const Conversations: React.FC = () => {
     }
 
     return filtered;
-  }, [searchQuery, activeFilter, mockThreads]);
+  }, [searchQuery, activeFilter]);
 
   const getUrgencyIndicator = (urgency: 'high' | 'medium' | 'low', responseTime: number) => {
     if (urgency === 'high') {
@@ -242,4 +242,7 @@ const Conversations: React.FC = () => {
   );
 };
 
-export default Conversations; 
+export default Conversations;
+
+// Prevent static generation for this page since it uses Clerk auth
+export const dynamic = 'force-dynamic'; 

@@ -256,4 +256,7 @@ const Analytics: React.FC = () => {
   );
 };
 
-export default Analytics; 
+export default Analytics;
+
+// Prevent static generation for this page since it uses Clerk auth
+export const dynamic = 'force-dynamic'; 

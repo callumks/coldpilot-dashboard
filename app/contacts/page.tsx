@@ -267,4 +267,7 @@ const Contacts: React.FC = () => {
   );
 };
 
-export default Contacts; 
+export default Contacts;
+
+// Prevent static generation for this page since it uses Clerk auth
+export const dynamic = 'force-dynamic'; 
