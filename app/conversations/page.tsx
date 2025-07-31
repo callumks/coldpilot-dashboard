@@ -95,7 +95,16 @@ const Conversations: React.FC = () => {
           <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-card">
             <div className="divide-y divide-gray-800">
               {mockThreads.map((thread) => (
-                <ThreadPreview key={thread.id} thread={thread} />
+                <ThreadPreview 
+                  key={thread.id}
+                  id={+thread.id}
+                  sender={thread.recipientName}
+                  company={thread.recipientCompany}
+                  subject={`Re: Cold Outreach - ${thread.recipientCompany}`}
+                  preview={thread.lastMessage}
+                  time={thread.timestamp}
+                  isUnread={thread.unreadCount > 0}
+                />
               ))}
             </div>
           </div>
