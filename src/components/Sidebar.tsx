@@ -26,7 +26,7 @@ export default function Sidebar() {
   const { user } = useUser();
 
   return (
-    <aside className="w-64 bg-[#111] border-r border-gray-800 p-4 flex flex-col h-screen">
+    <aside className="fixed left-0 top-0 w-64 bg-[#111] border-r border-gray-800 p-4 flex flex-col h-screen z-40">
       {/* Coldpilot Logo */}
       <div className="mb-4 flex-shrink-0">
         <div className="relative h-6">
