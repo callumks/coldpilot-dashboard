@@ -52,7 +52,7 @@ const Settings: React.FC = () => {
             </div>
             <div>
               <h3 className="text-lg font-medium text-white">Notifications</h3>
-              <p className="text-sm text-gray-400">Choose what updates you'd like to receive</p>
+              <p className="text-sm text-gray-400">Choose what updates you&apos;d like to receive</p>
             </div>
           </div>
 

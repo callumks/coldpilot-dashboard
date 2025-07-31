@@ -5,12 +5,8 @@ import { Search, Clock, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import ThreadPreview from '../../src/components/ThreadPreview';
 
-const Conversations: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
-
-  const mockThreads = [
+// Mock data moved outside component to avoid useMemo dependency warning
+const mockThreads = [
     {
       id: '1',
       recipientName: 'Sarah Johnson',
@@ -68,6 +64,11 @@ const Conversations: React.FC = () => {
     },
   ];
 
+const Conversations: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+
   // Filter and search logic
   const filteredThreads = useMemo(() => {
     let filtered = mockThreads;
@@ -91,7 +92,7 @@ const Conversations: React.FC = () => {
     }
 
     return filtered;
-  }, [searchQuery, activeFilter]);
+  }, [searchQuery, activeFilter, mockThreads]);
 
   const getUrgencyIndicator = (urgency: 'high' | 'medium' | 'low', responseTime: number) => {
     if (urgency === 'high') {
