@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import DashboardLayout from '@/components/DashboardLayout';
-import ThreadPreview from '@/components/ThreadPreview';
+import DashboardLayout from '../../src/components/DashboardLayout';
+import ThreadPreview from '../../src/components/ThreadPreview';
 
 const Conversations: React.FC = () => {
   const mockThreads = [

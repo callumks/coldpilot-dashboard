@@ -1,78 +1,73 @@
 'use client';
 
-import React from 'react';
-import { usePathname } from 'next/navigation';
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  HomeIcon,
-  ChatBubbleLeftRightIcon,
-  ChartBarIcon,
-  UsersIcon,
-  Cog6ToothIcon,
-} from '@heroicons/react/24/outline';
+  Home,
+  MessageCircle,
+  BarChart3,
+  Users,
+  Settings,
+} from "lucide-react";
 
-interface SidebarProps {}
+const navigationItems = [
+  { icon: Home, label: "Dashboard", href: "/dashboard" },
+  { icon: MessageCircle, label: "Conversations", href: "/conversations" },
+  { icon: BarChart3, label: "Analytics", href: "/analytics" },
+  { icon: Users, label: "Contacts", href: "/contacts" },
+  { icon: Settings, label: "Settings", href: "/settings" },
+];
 
-const Sidebar: React.FC<SidebarProps> = () => {
+export default function Sidebar() {
   const pathname = usePathname();
-  
-  const navigationItems = [
-    { name: 'Dashboard', icon: HomeIcon, path: '/dashboard' },
-    { name: 'Conversations', icon: ChatBubbleLeftRightIcon, path: '/conversations' },
-    { name: 'Analytics', icon: ChartBarIcon, path: '/analytics' },
-    { name: 'Contacts', icon: UsersIcon, path: '/contacts' },
-    { name: 'Settings', icon: Cog6ToothIcon, path: '/settings' },
-  ];
 
   return (
-    <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
-      {/* Logo */}
-      <div className="p-5">
-        <a href="/dashboard" className="flex items-center">
-          <div className="w-7 h-7 bg-primary-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">C</span>
-          </div>
-          <span className="ml-3 text-lg font-medium text-white">
-            Coldpilot
-          </span>
-        </a>
-      </div>
+    <aside className="w-64 bg-[#111] border-r border-gray-800 p-4 flex flex-col gap-6">
+      <div className="text-xl font-bold text-white mb-4">📘 Coldpilot</div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 pb-4 space-y-1">
+      <nav className="flex flex-col gap-3 text-gray-400">
         {navigationItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.path;
+          const isActive = pathname === item.href;
+          
           return (
-            <a
-              key={item.name}
-              href={item.path}
-              className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-0 ${
-                isActive
-                  ? 'bg-primary-500/10 text-primary-500 border border-primary-500/20'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 border border-transparent'
-              }`}
-            >
-              <Icon className="mr-3 h-4 w-4" />
-              {item.name}
-            </a>
+            <SidebarLink 
+              key={item.href}
+              icon={<Icon size={18} />} 
+              label={item.label} 
+              href={item.href}
+              isActive={isActive}
+            />
           );
         })}
       </nav>
-
-      {/* User profile */}
-      <div className="p-4 border-t border-gray-800">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center">
-            <span className="text-xs font-medium text-gray-300">JD</span>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-gray-200">John Doe</p>
-            <p className="text-xs text-gray-500">john@coldpilot.com</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    </aside>
   );
-};
+}
 
-export default Sidebar; 
+function SidebarLink({ 
+  icon, 
+  label, 
+  href, 
+  isActive 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  href: string;
+  isActive: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 ${
+        isActive 
+          ? 'bg-white/10 text-white border border-white/20' 
+          : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-white'
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </Link>
+  );
+} 
