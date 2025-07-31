@@ -108,7 +108,7 @@ const Dashboard: React.FC = () => {
               Dashboard
             </h1>
             <p className="text-gray-400 text-base">
-              Welcome back! Here's what's happening with your campaigns.
+              Welcome back! Here&apos;s what&apos;s happening with your campaigns.
             </p>
           </div>
 
