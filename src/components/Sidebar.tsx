@@ -26,17 +26,8 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-[#111] border-r border-gray-800 p-4 flex flex-col gap-6">
       {/* Coldpilot Logo */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="relative w-8 h-8 flex-shrink-0">
-          <Image
-            src="/coldpilot-logo-dark-mode.png"
-            alt="Coldpilot Logo"
-            width={32}
-            height={32}
-            className="object-contain"
-          />
-        </div>
-        <div className="relative h-6 flex-1">
+      <div className="mb-4">
+        <div className="relative h-6">
           <Image
             src="/coldpilot-wm-dark-mode.png"
             alt="Coldpilot"
