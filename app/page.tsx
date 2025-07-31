@@ -1,22 +1,39 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import Image from 'next/image';
 
-export default function Home() {
+export default function HomePage() {
+  const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/dashboard');
-  }, [router]);
+    if (isLoaded) {
+      if (isSignedIn) {
+        router.push('/dashboard');
+      } else {
+        router.push('/sign-in');
+      }
+    }
+  }, [isSignedIn, isLoaded, router]);
 
+  // Loading state while Clerk checks authentication
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
       <div className="text-center">
-        <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center mx-auto mb-4">
-          <span className="text-white font-semibold text-sm">C</span>
+        <div className="relative h-8 mx-auto mb-6 max-w-[200px]">
+          <Image
+            src="/coldpilot-wm-dark-mode.png"
+            alt="Coldpilot"
+            fill
+            className="object-contain"
+          />
         </div>
-        <p className="text-gray-400">Redirecting to dashboard...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <p className="text-gray-400 mt-4 text-sm">Loading...</p>
       </div>
     </div>
   );

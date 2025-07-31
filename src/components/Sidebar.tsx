@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { useUser, UserButton } from "@clerk/nextjs";
 import {
   Home,
   MessageCircle,
@@ -22,9 +23,10 @@ const navigationItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useUser();
 
   return (
-    <aside className="w-64 bg-[#111] border-r border-gray-800 p-4 flex flex-col gap-6">
+    <aside className="w-64 bg-[#111] border-r border-gray-800 p-4 flex flex-col gap-6 h-screen">
       {/* Coldpilot Logo */}
       <div className="mb-4">
         <div className="relative h-6">
@@ -37,7 +39,8 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex flex-col gap-3 text-gray-400">
+      {/* Navigation */}
+      <nav className="flex flex-col gap-3 text-gray-400 flex-1">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -53,6 +56,32 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* User Profile Section */}
+      {user && (
+        <div className="border-t border-gray-800 pt-4">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: "w-8 h-8",
+                  userButtonPopover: "bg-[#111] border border-gray-800",
+                  userButtonPopoverCard: "bg-[#111]",
+                  userButtonPopoverActions: "bg-[#111]"
+                }
+              }}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {user.fullName || user.emailAddresses[0]?.emailAddress}
+              </p>
+              <p className="text-xs text-gray-400">
+                {user.emailAddresses[0]?.emailAddress}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
