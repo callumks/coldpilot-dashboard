@@ -9,6 +9,25 @@ const nextConfig = {
   trailingSlash: false,
   poweredByHeader: false,
   compress: true,
+  experimental: {
+    // Disable prerendering for all pages to avoid SSR issues with Clerk
+    appDir: true,
+    serverComponentsExternalPackages: ["@clerk/nextjs"],
+  },
+  // Force dynamic rendering for all routes
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, max-age=0",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
