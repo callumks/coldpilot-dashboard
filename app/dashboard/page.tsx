@@ -13,18 +13,21 @@ const Dashboard: React.FC = () => {
       value: '24.5%',
       change: '+2.1%',
       trend: 'up' as const,
+      description: 'Percentage of recipients who opened your emails. Industry average is 22%.'
     },
     {
       title: 'Meetings Booked',
       value: '127',
       change: '+12',
       trend: 'up' as const,
+      description: 'Total number of meetings scheduled through your outreach campaigns this month.'
     },
     {
       title: 'Replies',
       value: '1,429',
       change: '-3.2%',
       trend: 'down' as const,
+      description: 'Total email replies received. A slight decrease is normal as campaigns mature.'
     },
   ];
 
