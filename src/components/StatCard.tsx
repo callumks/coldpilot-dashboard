@@ -10,22 +10,28 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, change, trend }) => {
   return (
-    <div className="bg-[#121826] border border-gray-800/50 rounded-xl p-6 shadow-md hover:scale-[1.01] hover:shadow-lg transition-all duration-150 h-full">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide">{title}</h3>
-        <div className={`flex items-center space-x-1 ${
-          trend === 'up' ? 'text-green-400' : 'text-red-400'
+    <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/[0.08] transition-all duration-300 group cursor-pointer">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            {title}
+          </p>
+          <p className="text-2xl font-semibold text-white tracking-tight">
+            {value}
+          </p>
+        </div>
+        <div className={`flex items-center space-x-1 px-2 py-1 rounded-lg ${
+          trend === 'up' 
+            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+            : 'bg-red-500/10 text-red-400 border border-red-500/20'
         }`}>
           {trend === 'up' ? (
-            <ArrowUpIcon className="h-4 w-4" />
+            <ArrowUpIcon className="h-3 w-3" />
           ) : (
-            <ArrowDownIcon className="h-4 w-4" />
+            <ArrowDownIcon className="h-3 w-3" />
           )}
-          <span className="text-sm font-semibold">{change}</span>
+          <span className="text-xs font-medium">{change}</span>
         </div>
-      </div>
-      <div>
-        <p className="text-3xl font-bold text-white tracking-tight">{value}</p>
       </div>
     </div>
   );
