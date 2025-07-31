@@ -26,7 +26,7 @@ export default function Sidebar() {
   const { user } = useUser();
 
   return (
-    <aside className="w-64 bg-[#111] border-r border-gray-800 p-4 flex flex-col gap-6 h-screen">
+    <aside className="w-64 bg-[#111] border-r border-gray-800 p-4 flex flex-col min-h-screen">
       {/* Coldpilot Logo */}
       <div className="mb-4">
         <div className="relative h-6">
@@ -39,8 +39,8 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex flex-col gap-3 text-gray-400 flex-1">
+      {/* Navigation - This will expand to fill available space */}
+      <nav className="flex flex-col gap-3 text-gray-400 flex-1 mb-6">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -57,9 +57,9 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* User Profile Section */}
+      {/* User Profile Section - Sticks to bottom */}
       {user && (
-        <div className="border-t border-gray-800 pt-4">
+        <div className="border-t border-gray-800 pt-4 mt-auto">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-all">
             <UserButton 
               appearance={{
