@@ -88,6 +88,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     // Get the subscription from Stripe
     const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
     
+    // Debug log to understand the data structure
+    console.log('Subscription object keys:', Object.keys(subscription));
+    console.log('Current period start:', (subscription as any).current_period_start);
+    console.log('Current period end:', (subscription as any).current_period_end);
+    
     const customerName = session.customer_details?.name || '';
     const nameParts = customerName.split(' ');
     const firstName = nameParts.length > 0 ? nameParts[0] : null;
@@ -118,10 +123,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         status: mapStripeStatus(subscription.status),
         plan: plan.toUpperCase() as 'BASIC' | 'PRO' | 'AGENCY',
         interval: interval.toUpperCase() as 'MONTHLY' | 'YEARLY',
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-        trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+        trialStart: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
+        trialEnd: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
         userId: user.id,
       },
     });
