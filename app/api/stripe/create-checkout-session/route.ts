@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import Stripe from 'stripe';
 
+// CORS headers for cross-domain requests
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "https://coldpilot.tech",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-07-30.basil',
 });
@@ -31,6 +38,11 @@ const PRICE_IDS: { [K in Plan]: { [J in Interval]: string } } = {
   },
 };
 
+// Handle CORS preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get the authenticated user from Clerk
@@ -39,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -51,21 +63,21 @@ export async function POST(request: NextRequest) {
     if (!plan || !interval) {
       return NextResponse.json(
         { error: 'Missing plan or interval' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
     if (!['basic', 'pro', 'agency'].includes(plan)) {
       return NextResponse.json(
         { error: 'Invalid plan' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
     if (!['monthly', 'yearly'].includes(interval)) {
       return NextResponse.json(
         { error: 'Invalid interval' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -75,12 +87,12 @@ export async function POST(request: NextRequest) {
     if (!priceId) {
       return NextResponse.json(
         { error: 'Price ID not found for this plan and interval' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
-    // Get the base URL for redirects
-    const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Get the base URL for redirects (always redirect to dashboard domain)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coldpilot.tech';
 
     // Create Stripe checkout session parameters
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
@@ -124,7 +136,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       url: session.url,
       sessionId: session.id 
-    });
+    }, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Error creating checkout session:', error);
@@ -134,7 +146,7 @@ export async function POST(request: NextRequest) {
         error: 'Internal server error',
         message: error instanceof globalThis.Error ? error.message : 'Unknown error'
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 } 
