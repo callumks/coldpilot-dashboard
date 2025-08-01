@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import StatCard from '../../src/components/StatCard';
 import { CheckCircle, AlertCircle, X } from 'lucide-react';
 
-const Dashboard: React.FC = () => {
+const DashboardContent: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState('all');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -256,6 +256,14 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
     </DashboardLayout>
+  );
+};
+
+const Dashboard: React.FC = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 };
 
