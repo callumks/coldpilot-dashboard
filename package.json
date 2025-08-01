@@ -29,6 +29,7 @@
     "prisma": "^6.13.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "sharp": "^0.34.3",
     "stripe": "^18.4.0"
   },
   "devDependencies": {
