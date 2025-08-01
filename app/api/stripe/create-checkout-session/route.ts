@@ -106,7 +106,6 @@ export async function POST(request: NextRequest) {
       ],
       success_url: `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/pricing`,
-      customer_creation: 'always',
       metadata: {
         clerkUserId: userId,
         plan,
