@@ -48,18 +48,33 @@ const SubscriptionCard: React.FC = () => {
 
   const handleManageBilling = async () => {
     try {
+      console.log('🔄 Attempting to access billing portal...');
+      
       const response = await fetch('/api/stripe/billing-portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
 
-      if (!response.ok) throw new globalThis.Error('Failed to access billing portal');
+      console.log('📡 Response status:', response.status);
 
-      const { url } = await response.json();
-      window.location.href = url;
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
+        throw new globalThis.Error(`API Error: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Portal session created:', data);
+      
+      if (!data.url) {
+        throw new globalThis.Error('No billing portal URL received');
+      }
+
+      console.log('🌐 Redirecting to:', data.url);
+      window.location.href = data.url;
     } catch (error) {
-      console.error('Error accessing billing portal:', error);
-      alert('Failed to access billing portal. Please try again.');
+      console.error('💥 Error accessing billing portal:', error);
+      alert(`Failed to access billing portal: ${error instanceof globalThis.Error ? error.message : 'Unknown error'}. Please try again or contact support.`);
     }
   };
 

@@ -9,9 +9,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔄 Billing portal request received');
+    
     const { userId } = await auth();
+    console.log('👤 User ID from auth:', userId);
     
     if (!userId) {
+      console.log('❌ No user ID - unauthorized');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -24,7 +28,12 @@ export async function POST(request: NextRequest) {
       include: { subscription: true },
     });
 
+    console.log('👤 User found:', !!user);
+    console.log('💳 Subscription found:', !!user?.subscription);
+    console.log('🆔 Customer ID:', user?.subscription?.stripeCustomerId);
+
     if (!user || !user.subscription) {
+      console.log('❌ No user or subscription found');
       return NextResponse.json(
         { error: 'No active subscription found' },
         { status: 404 }
@@ -32,12 +41,17 @@ export async function POST(request: NextRequest) {
     }
 
     const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    console.log('🌐 Base URL for return:', baseUrl);
 
     // Create a billing portal session
+    console.log('🔄 Creating Stripe billing portal session...');
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: user.subscription.stripeCustomerId,
       return_url: `${baseUrl}/settings`,
     });
+
+    console.log('✅ Portal session created successfully');
+    console.log('🔗 Portal URL:', portalSession.url);
 
     return NextResponse.json({ 
       url: portalSession.url 
