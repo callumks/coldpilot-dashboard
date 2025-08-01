@@ -90,6 +90,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     
     // Debug log to understand the data structure
     console.log('Subscription object keys:', Object.keys(subscription));
+    console.log('Created:', (subscription as any).created);
+    console.log('Start date:', (subscription as any).start_date);
+    console.log('Billing cycle anchor:', (subscription as any).billing_cycle_anchor);
     console.log('Current period start:', (subscription as any).current_period_start);
     console.log('Current period end:', (subscription as any).current_period_end);
     
@@ -123,8 +126,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         status: mapStripeStatus(subscription.status),
         plan: plan.toUpperCase() as 'BASIC' | 'PRO' | 'AGENCY',
         interval: interval.toUpperCase() as 'MONTHLY' | 'YEARLY',
-        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+        currentPeriodStart: new Date(((subscription as any).current_period_start || (subscription as any).start_date || (subscription as any).created) * 1000),
+        currentPeriodEnd: new Date(((subscription as any).current_period_end || (subscription as any).billing_cycle_anchor || ((subscription as any).start_date || (subscription as any).created) + 2629746) * 1000),
         trialStart: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
         trialEnd: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
         userId: user.id,
