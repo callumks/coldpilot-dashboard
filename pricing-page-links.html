@@ -1,0 +1,89 @@
+<!-- ============================================ -->
+<!-- COLDPILOT PRICING PAGE - SIMPLE LINKS -->
+<!-- Replace your current buttons with these exact links -->
+<!-- ============================================ -->
+
+<!-- MONTHLY PRICING (when Monthly toggle is active) -->
+
+<!-- Basic Monthly -->
+<a
+  href="https://app.coldpilot.tech/api/stripe/checkout?plan=basic&interval=monthly"
+  class="your-button-classes"
+>
+  Start with Basic
+</a>
+
+<!-- Pro Monthly -->
+<a
+  href="https://app.coldpilot.tech/api/stripe/checkout?plan=pro&interval=monthly"
+  class="your-button-classes"
+>
+  Sign Up with Pro
+</a>
+
+<!-- Agency Monthly -->
+<a
+  href="https://app.coldpilot.tech/api/stripe/checkout?plan=agency&interval=monthly"
+  class="your-button-classes"
+>
+  Get Agency access
+</a>
+
+<!-- ============================================ -->
+
+<!-- YEARLY PRICING (when Yearly toggle is active) -->
+
+<!-- Basic Yearly -->
+<a
+  href="https://app.coldpilot.tech/api/stripe/checkout?plan=basic&interval=yearly"
+  class="your-button-classes"
+>
+  Start with Basic
+</a>
+
+<!-- Pro Yearly -->
+<a
+  href="https://app.coldpilot.tech/api/stripe/checkout?plan=pro&interval=yearly"
+  class="your-button-classes"
+>
+  Sign Up with Pro
+</a>
+
+<!-- Agency Yearly -->
+<a
+  href="https://app.coldpilot.tech/api/stripe/checkout?plan=agency&interval=yearly"
+  class="your-button-classes"
+>
+  Get Agency access
+</a>
+
+<!-- ============================================ -->
+<!-- IMPLEMENTATION NOTES -->
+<!-- ============================================ -->
+
+<!-- 
+HOW THIS WORKS:
+1. User clicks link → Goes to app.coldpilot.tech/api/stripe/checkout
+2. If not signed in → Redirected to sign-in page
+3. If signed in → Automatically redirected to Stripe checkout
+4. After payment → Redirected to dashboard with success message
+
+WHAT YOU NEED TO DO:
+1. Update your toggle to show/hide the right set of links
+2. When "Monthly" is active → Show monthly links
+3. When "Yearly" is active → Show yearly links
+4. Keep the same button styling and classes
+
+NO JAVASCRIPT REQUIRED! ✨
+-->
+
+<!-- ============================================ -->
+<!-- EXAMPLE: Button with your styling -->
+<!-- ============================================ -->
+
+<a
+  href="https://app.coldpilot.tech/api/stripe/checkout?plan=pro&interval=monthly"
+  class="btn btn-primary w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+>
+  Sign Up with Pro - $69/month
+</a>
