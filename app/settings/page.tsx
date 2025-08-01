@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Save, Bell, Mail, Download, Upload, Key, Zap } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
+import SubscriptionCard from '../../src/components/SubscriptionCard';
 
 const Settings: React.FC = () => {
   const [notifications, setNotifications] = useState({
@@ -44,6 +45,9 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="max-w-4xl space-y-8">
+        {/* Subscription Management */}
+        <SubscriptionCard />
+
         {/* Notification Settings */}
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -57,7 +61,7 @@ const Settings: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            {Object.entries({
+            {globalThis.Object.entries({
               emailReplies: 'Email replies received',
               meetingBooked: 'New meetings booked',
               campaignComplete: 'Campaign completion',

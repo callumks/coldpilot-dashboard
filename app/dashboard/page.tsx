@@ -1,11 +1,41 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import StatCard from '../../src/components/StatCard';
+import { CheckCircle, AlertCircle, X } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState('all');
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  // Handle Stripe checkout success
+  useEffect(() => {
+    const sessionId = searchParams?.get('session_id');
+    const error = searchParams?.get('error');
+    
+    if (sessionId) {
+      // Show success message
+      setShowSuccessMessage(true);
+      // Auto-hide after 10 seconds
+      const timer = setTimeout(() => setShowSuccessMessage(false), 10000);
+      
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard');
+      
+      return () => clearTimeout(timer);
+    }
+    
+    if (error) {
+      setPaymentError('Payment was cancelled or failed. Please try again.');
+      const timer = setTimeout(() => setPaymentError(null), 8000);
+      window.history.replaceState({}, '', '/dashboard');
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   const statData = [
     {
@@ -103,6 +133,45 @@ const Dashboard: React.FC = () => {
 
   return (
     <DashboardLayout>
+      {/* Success/Error Notifications */}
+      {showSuccessMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500/20 border border-green-500/50 rounded-lg p-4 max-w-md">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-green-400 font-medium">Payment Successful!</h4>
+              <p className="text-green-300 text-sm mt-1">
+                Your subscription has been activated. Welcome to ColdPilot!
+              </p>
+            </div>
+            <button 
+              onClick={() => setShowSuccessMessage(false)}
+              className="text-green-400 hover:text-green-300"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {paymentError && (
+        <div className="fixed top-4 right-4 z-50 bg-red-500/20 border border-red-500/50 rounded-lg p-4 max-w-md">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-red-400 font-medium">Payment Failed</h4>
+              <p className="text-red-300 text-sm mt-1">{paymentError}</p>
+            </div>
+            <button 
+              onClick={() => setPaymentError(null)}
+              className="text-red-400 hover:text-red-300"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="mb-12">
         <h1 className="text-3xl font-medium text-white mb-3 tracking-tight">
