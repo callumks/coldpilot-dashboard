@@ -82,15 +82,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const interval = metadata?.interval;
     
     if (!clerkUserId || !plan || !interval) {
-      throw new Error('Missing required metadata in checkout session');
+      throw new globalThis.Error('Missing required metadata in checkout session');
     }
 
     // Get the subscription from Stripe
-    const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+    const stripeSubscription = await stripe.subscriptions.retrieve(session.subscription as string);
+    const subscription = stripeSubscription as Stripe.Subscription;
     
     const customerName = session.customer_details?.name || '';
-    const firstName = customerName.split(' ')[0] || null;
-    const lastName = customerName.split(' ').slice(1).join(' ') || null;
+    const nameParts = customerName.split(' ');
+    const firstName = nameParts[0] || null;
+    const lastName = nameParts.slice(1).join(' ') || null;
     
     // Create or update user
     const user = await prisma.user.upsert({
@@ -99,7 +101,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         email: session.customer_details?.email || '',
       },
       create: {
-        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `user_${globalThis.Date.now()}_${globalThis.Math.random().toString(36).substr(2, 9)}`,
         clerkId: clerkUserId,
         email: session.customer_details?.email || '',
         firstName: firstName,
@@ -110,17 +112,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     // Create subscription record
     await prisma.subscription.create({
       data: {
-        id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `sub_${globalThis.Date.now()}_${globalThis.Math.random().toString(36).substr(2, 9)}`,
         stripeCustomerId: session.customer as string,
         stripeSubscriptionId: subscription.id,
         stripePriceId: subscription.items.data[0].price.id,
         status: mapStripeStatus(subscription.status),
         plan: plan.toUpperCase() as 'BASIC' | 'PRO' | 'AGENCY',
         interval: interval.toUpperCase() as 'MONTHLY' | 'YEARLY',
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-        trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+        currentPeriodStart: new globalThis.Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new globalThis.Date(subscription.current_period_end * 1000),
+        trialStart: subscription.trial_start ? new globalThis.Date(subscription.trial_start * 1000) : null,
+        trialEnd: subscription.trial_end ? new globalThis.Date(subscription.trial_end * 1000) : null,
         userId: user.id,
       },
     });
@@ -144,18 +146,18 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const updateData: any = {
       status: mapStripeStatus(subscription.status),
       stripePriceId: subscription.items.data[0].price.id,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-      trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+      currentPeriodStart: new globalThis.Date(subscription.current_period_start * 1000),
+      currentPeriodEnd: new globalThis.Date(subscription.current_period_end * 1000),
+      trialStart: subscription.trial_start ? new globalThis.Date(subscription.trial_start * 1000) : null,
+      trialEnd: subscription.trial_end ? new globalThis.Date(subscription.trial_end * 1000) : null,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+      canceledAt: subscription.canceled_at ? new globalThis.Date(subscription.canceled_at * 1000) : null,
     };
 
-    if (plan) {
+    if (plan && typeof plan === 'string') {
       updateData.plan = plan.toUpperCase();
     }
-    if (interval) {
+    if (interval && typeof interval === 'string') {
       updateData.interval = interval.toUpperCase();
     }
 
@@ -222,7 +224,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       where: { stripeSubscriptionId: subscription.id },
       data: {
         status: 'CANCELED',
-        canceledAt: new Date(),
+        canceledAt: new globalThis.Date(),
       },
     });
 

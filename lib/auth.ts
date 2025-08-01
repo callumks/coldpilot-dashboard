@@ -68,11 +68,11 @@ export async function requireSubscription(minimumPlan?: Plan): Promise<UserSubsc
   }
 
   if (minimumPlan) {
-    const planHierarchy: Plan[] = ['BASIC', 'PRO', 'AGENCY'];
-    const userPlanIndex = planHierarchy.indexOf(subscription.plan);
-    const minimumPlanIndex = planHierarchy.indexOf(minimumPlan);
+    const planValues: { [key: string]: number } = { 'BASIC': 0, 'PRO': 1, 'AGENCY': 2 };
+    const userPlanLevel = planValues[subscription.plan] || 0;
+    const minimumPlanLevel = planValues[minimumPlan] || 0;
     
-    if (userPlanIndex < minimumPlanIndex) {
+    if (userPlanLevel < minimumPlanLevel) {
       throw new globalThis.Error(`${minimumPlan} plan or higher required`);
     }
   }
@@ -88,7 +88,7 @@ export async function checkFeatureAccess(feature: string): Promise<boolean> {
   }
 
   // Feature access rules based on plan
-  const featureAccess: Record<Plan, string[]> = {
+  const featureAccess: { [K in Plan]: string[] } = {
     BASIC: ['basic_features', 'contacts', 'conversations'],
     PRO: ['basic_features', 'contacts', 'conversations', 'analytics', 'campaigns', 'ai_assistance'],
     AGENCY: ['basic_features', 'contacts', 'conversations', 'analytics', 'campaigns', 'ai_assistance', 'team_management', 'white_label'],
