@@ -34,34 +34,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Received webhook event:', event.type);
+    // 🚨 AUDIT IMPROVEMENT: Log webhook event for debugging
+    const webhookLog = await prisma.webhookEvent.create({
+      data: {
+        eventId: event.id,
+        eventType: event.type,
+        rawPayload: event,
+        status: 'PENDING',
+      },
+    });
 
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
-        break;
+    console.log('Received webhook event:', event.type, 'ID:', event.id);
 
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
-        break;
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed':
+          await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+          break;
 
-      case 'invoice.payment_succeeded':
-        await handlePaymentSucceeded(event.data.object as Stripe.Invoice);
-        break;
+        case 'customer.subscription.updated':
+          await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+          break;
 
-      case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
-        break;
+        case 'invoice.payment_succeeded':
+          await handlePaymentSucceeded(event.data.object as Stripe.Invoice);
+          break;
 
-      case 'invoice.payment_failed':
-        await handlePaymentFailed(event.data.object as Stripe.Invoice);
-        break;
+        case 'customer.subscription.deleted':
+          await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+          break;
 
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
+        case 'invoice.payment_failed':
+          await handlePaymentFailed(event.data.object as Stripe.Invoice);
+          break;
+
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
+      }
+
+      // 🚨 AUDIT IMPROVEMENT: Mark webhook as successfully processed
+      await prisma.webhookEvent.update({
+        where: { id: webhookLog.id },
+        data: {
+          status: 'SUCCESS',
+          handledAt: new Date(),
+        },
+      });
+
+      return NextResponse.json({ received: true });
+
+    } catch (processingError) {
+      // 🚨 AUDIT IMPROVEMENT: Log webhook processing failure
+      await prisma.webhookEvent.update({
+        where: { id: webhookLog.id },
+        data: {
+          status: 'FAILED',
+          errorMessage: processingError instanceof Error ? processingError.message : 'Unknown error',
+          retryCount: { increment: 1 },
+        },
+      });
+      
+      throw processingError; // Re-throw to trigger outer catch
     }
-
-    return NextResponse.json({ received: true });
 
   } catch (error) {
     console.error('Webhook error:', error);

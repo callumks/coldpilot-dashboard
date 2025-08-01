@@ -165,6 +165,21 @@ model Analytics {
   @@map("analytics")
 }
 
+// Webhook Event model - for logging and debugging Stripe webhooks
+model WebhookEvent {
+  id          String            @id @default(cuid())
+  eventId     String            @unique // Stripe event ID
+  eventType   String            // e.g., 'checkout.session.completed'
+  status      WebhookStatus     @default(PENDING)
+  rawPayload  Json              // Full Stripe event data
+  errorMessage String?          // If processing failed
+  handledAt   DateTime?         // When successfully processed
+  createdAt   DateTime          @default(now())
+  retryCount  Int               @default(0)
+
+  @@map("webhook_events")
+}
+
 // Enums
 enum SubscriptionStatus {
   TRIALING
@@ -229,4 +244,11 @@ enum Priority {
 enum Direction {
   INBOUND
   OUTBOUND
+}
+
+enum WebhookStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  RETRYING
 }

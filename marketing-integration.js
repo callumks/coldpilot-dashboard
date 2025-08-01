@@ -15,6 +15,16 @@ async function initiateCheckout(plan, interval) {
     button.textContent = "Loading...";
     button.disabled = true;
 
+    // 🚨 AUDIT IMPROVEMENT: UTM tracking for campaign attribution
+    const urlParams = new URLSearchParams(window.location.search);
+    const utmData = {
+      utm_source: urlParams.get("utm_source"),
+      utm_medium: urlParams.get("utm_medium"),
+      utm_campaign: urlParams.get("utm_campaign"),
+      referrer: document.referrer,
+      landing_page: window.location.pathname,
+    };
+
     // Call your API
     const response = await fetch(
       `${API_BASE_URL}/api/stripe/create-checkout-session`,
@@ -26,6 +36,7 @@ async function initiateCheckout(plan, interval) {
         body: JSON.stringify({
           plan: plan,
           interval: interval,
+          metadata: utmData, // Add tracking data
         }),
       }
     );

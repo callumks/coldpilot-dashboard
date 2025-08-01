@@ -1,7 +1,54 @@
 import React from 'react';
-import { MagnifyingGlassIcon, BellIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, BellIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface TopbarProps {}
+
+// 🚨 AUDIT IMPROVEMENT: Billing Status Badge Component
+const BillingStatusBadge = () => {
+  // Mock data - replace with actual subscription status
+  const status = 'TRIALING'; // TRIALING, ACTIVE, PAST_DUE, CANCELED
+  const daysLeft = 5;
+
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'TRIALING':
+        return {
+          text: `${daysLeft} days left`,
+          bgColor: 'bg-yellow-500/20',
+          textColor: 'text-yellow-400',
+          icon: ExclamationTriangleIcon,
+        };
+      case 'PAST_DUE':
+        return {
+          text: 'Payment Due',
+          bgColor: 'bg-red-500/20',
+          textColor: 'text-red-400',
+          icon: ExclamationTriangleIcon,
+        };
+      case 'ACTIVE':
+        return {
+          text: 'Pro Plan',
+          bgColor: 'bg-green-500/20',
+          textColor: 'text-green-400',
+          icon: null,
+        };
+      default:
+        return null;
+    }
+  };
+
+  const config = getStatusConfig(status);
+  if (!config) return null;
+
+  const IconComponent = config.icon;
+
+  return (
+    <div className={`px-2 py-1 rounded-md text-xs font-medium flex items-center space-x-1 ${config.bgColor} ${config.textColor}`}>
+      {IconComponent && <IconComponent className="h-3 w-3" />}
+      <span>{config.text}</span>
+    </div>
+  );
+};
 
 const Topbar: React.FC<TopbarProps> = () => {
   return (
@@ -21,6 +68,9 @@ const Topbar: React.FC<TopbarProps> = () => {
 
         {/* Right side */}
         <div className="flex items-center space-x-3">
+          {/* 🚨 AUDIT IMPROVEMENT: Billing Status Indicator */}
+          <BillingStatusBadge />
+
           {/* Notifications */}
           <button className="relative p-2 text-gray-400 hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-0">
             <BellIcon className="h-5 w-5" />
