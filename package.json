@@ -7,15 +7,22 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.28.1",
     "@heroicons/react": "^2.0.18",
+    "@prisma/client": "^6.13.0",
     "lucide-react": "^0.535.0",
     "next": "^14.0.0",
+    "prisma": "^6.13.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "stripe": "^18.4.0"

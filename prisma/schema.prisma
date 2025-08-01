@@ -1,0 +1,232 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - synced with Clerk
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique // Clerk user ID
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  subscription Subscription?
+  contacts     Contact[]
+  campaigns    Campaign[]
+  conversations Conversation[]
+  analytics    Analytics[]
+
+  @@map("users")
+}
+
+// Subscription model - synced with Stripe
+model Subscription {
+  id                   String               @id @default(cuid())
+  stripeCustomerId     String               @unique
+  stripeSubscriptionId String               @unique
+  stripePriceId        String
+  status               SubscriptionStatus
+  plan                 Plan
+  interval             BillingInterval
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  cancelAtPeriodEnd    Boolean              @default(false)
+  canceledAt           DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  // Relationships
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// Contact model - for lead management
+model Contact {
+  id             String        @id @default(cuid())
+  name           String
+  email          String
+  company        String?
+  position       String?
+  source         ContactSource @default(MANUAL)
+  status         ContactStatus @default(COLD)
+  lastContacted  DateTime?
+  tags           String[]      @default([])
+  notes          String?
+  linkedinUrl    String?
+  phoneNumber    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relationships
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@map("contacts")
+}
+
+// Campaign model - for outreach campaigns
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  status      CampaignStatus @default(DRAFT)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relationships
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@map("campaigns")
+}
+
+// Conversation model - for tracking email threads
+model Conversation {
+  id              String             @id @default(cuid())
+  subject         String
+  preview         String?
+  status          ConversationStatus @default(SENT)
+  priority        Priority           @default(MEDIUM)
+  lastMessageAt   DateTime           @default(now())
+  responseTime    Int?               // Hours to respond
+  unreadCount     Int                @default(0)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  // Relationships
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactId  String
+  contact    Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  messages   Message[]
+
+  @@map("conversations")
+}
+
+// Message model - individual messages in conversations
+model Message {
+  id             String      @id @default(cuid())
+  content        String
+  direction      Direction   // INBOUND or OUTBOUND
+  isRead         Boolean     @default(false)
+  sentAt         DateTime    @default(now())
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  emailMessageId String?     @unique // External email ID
+  createdAt      DateTime    @default(now())
+
+  // Relationships
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// Analytics model - for tracking performance metrics
+model Analytics {
+  id               String   @id @default(cuid())
+  date             DateTime @default(now()) @db.Date
+  emailsSent       Int      @default(0)
+  emailsOpened     Int      @default(0)
+  emailsReplied    Int      @default(0)
+  meetingsBooked   Int      @default(0)
+  openRate         Float    @default(0)
+  replyRate        Float    @default(0)
+  meetingRate      Float    @default(0)
+  avgResponseTime  Float?   // Hours
+
+  // Relationships
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("analytics")
+}
+
+// Enums
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+enum Plan {
+  BASIC
+  PRO
+  AGENCY
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum ContactSource {
+  MANUAL
+  LINKEDIN
+  EMAIL
+  REFERRAL
+  EVENT
+  WEBSITE
+}
+
+enum ContactStatus {
+  COLD
+  CONTACTED
+  REPLIED
+  INTERESTED
+  MEETING_SCHEDULED
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum ConversationStatus {
+  SENT
+  DELIVERED
+  OPENED
+  REPLIED
+  BOUNCED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
