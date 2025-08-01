@@ -29,8 +29,10 @@ export async function GET(request: NextRequest) {
     const { userId } = await auth();
     
     if (!userId) {
+      // Get the proper base URL for redirects
+      const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://app.coldpilot.tech';
       // Redirect to sign-in if not authenticated
-      return NextResponse.redirect(new URL('/sign-in', request.url));
+      return NextResponse.redirect(new URL('/sign-in', baseUrl));
     }
 
     // Get plan and interval from URL parameters
