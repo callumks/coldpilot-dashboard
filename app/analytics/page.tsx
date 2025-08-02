@@ -246,7 +246,10 @@ const Analytics: React.FC = () => {
               📊 {chartView === 'bar' ? 'Bar' : 'Line'} chart visualization coming soon
             </p>
             <p className="text-gray-500 text-xs">Install Recharts or Chart.js for interactive charts</p>
-            <button className="mt-4 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all text-sm">
+            <button 
+              onClick={() => alert('📊 Charts coming in Phase 2! We\'ll implement interactive charts with real campaign data soon.')}
+              className="mt-4 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all text-sm"
+            >
               Install Chart Library
             </button>
           </div>

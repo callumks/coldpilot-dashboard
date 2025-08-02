@@ -213,7 +213,10 @@ const DashboardContent: React.FC = () => {
           <h2 className="text-xl font-medium text-white tracking-tight">
             Recent Conversations
           </h2>
-          <button className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors px-4 py-2 rounded-lg hover:bg-blue-500/10 border border-transparent hover:border-blue-500/20">
+          <button 
+            onClick={() => window.location.href = '/conversations'}
+            className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors px-4 py-2 rounded-lg hover:bg-blue-500/10 border border-transparent hover:border-blue-500/20"
+          >
             View all
           </button>
         </div>

@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import { Plus, Upload, Search, Filter, Users, Mail, Calendar, MoreVertical } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import CSVUpload from '../../src/components/CSVUpload';
+import AddContactModal from '../../src/components/AddContactModal';
 
 const Contacts: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Mock contact data
@@ -96,7 +98,10 @@ const Contacts: React.FC = () => {
 
       {/* Action Buttons */}
       <div className="mb-8 flex flex-col sm:flex-row gap-4">
-        <button className="flex items-center gap-3 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-200 font-medium">
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-3 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-200 font-medium"
+        >
           <Plus className="h-4 w-4" />
           Add Contact
         </button>
@@ -107,7 +112,10 @@ const Contacts: React.FC = () => {
           <Upload className="h-4 w-4" />
           Import CSV
         </button>
-        <button className="flex items-center gap-3 px-6 py-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] text-white rounded-xl transition-all duration-200 font-medium">
+        <button 
+          onClick={() => alert('🚀 Bulk Email coming soon! We\'re building this feature as part of the campaign system.')}
+          className="flex items-center gap-3 px-6 py-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] text-white rounded-xl transition-all duration-200 font-medium"
+        >
           <Mail className="h-4 w-4" />
           Bulk Email
         </button>
@@ -279,6 +287,18 @@ const Contacts: React.FC = () => {
             setShowUploadModal(false);
           }}
           onClose={() => setShowUploadModal(false)}
+        />
+      )}
+
+      {/* Add Contact Modal */}
+      {showAddModal && (
+        <AddContactModal
+          onContactAdded={(contact) => {
+            console.log('Contact added:', contact);
+            setRefreshTrigger(prev => prev + 1);
+            setShowAddModal(false);
+          }}
+          onClose={() => setShowAddModal(false)}
         />
       )}
     </DashboardLayout>

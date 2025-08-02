@@ -20,6 +20,29 @@ const Settings: React.FC = () => {
     autoFollowUp: true,
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    
+    try {
+      // Simulate API call - replace with actual API when backend is ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Here you would make actual API calls to save settings
+      console.log('Saving settings:', { notifications, preferences });
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      alert('Failed to save settings. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleNotificationChange = (key: string) => {
     setNotifications(prev => ({
       ...prev,
@@ -212,10 +235,17 @@ const Settings: React.FC = () => {
         </div>
 
         {/* Save Button */}
-        <div className="flex justify-end">
-          <button className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all font-medium">
+        <div className="flex justify-end items-center gap-3">
+          {saveSuccess && (
+            <span className="text-green-400 text-sm">✅ Settings saved successfully!</span>
+          )}
+          <button 
+            onClick={handleSaveChanges}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white rounded-lg transition-all font-medium"
+          >
             <Save className="h-4 w-4" />
-            Save Changes
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>
