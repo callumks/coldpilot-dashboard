@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, User, Mail, Building, Briefcase, Phone, Linkedin } from 'lucide-react';
+import SmartTagsSuggestion from './SmartTagsSuggestion';
 
 interface AddContactModalProps {
   onClose: () => void;
@@ -18,6 +19,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({ onClose, onContactAdd
     linkedinUrl: '',
     notes: '',
   });
+  const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +65,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({ onClose, onContactAdd
         },
         body: JSON.stringify({
           ...formData,
+          tags: tags,
           source: 'MANUAL',
           status: 'COLD',
         }),
@@ -198,6 +201,22 @@ const AddContactModal: React.FC<AddContactModalProps> = ({ onClose, onContactAdd
               onChange={handleInputChange}
               placeholder="https://linkedin.com/in/johnsmith"
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Smart Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Tags
+            </label>
+            <SmartTagsSuggestion
+              contact={{
+                company: formData.company,
+                position: formData.position,
+                email: formData.email
+              }}
+              existingTags={tags}
+              onTagsChange={setTags}
             />
           </div>
 

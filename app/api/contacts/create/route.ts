@@ -12,6 +12,7 @@ interface CreateContactRequest {
   phoneNumber?: string;
   linkedinUrl?: string;
   notes?: string;
+  tags?: string[];
   source: 'MANUAL';
   status: 'COLD';
 }
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
         source: contactData.source,
         status: contactData.status,
         userId: user.id,
-        tags: [],
+        tags: contactData.tags || [],
       }
     });
 
@@ -114,6 +115,7 @@ export async function POST(request: NextRequest) {
         notes: newContact.notes,
         source: newContact.source,
         status: newContact.status,
+        tags: newContact.tags,
         createdAt: newContact.createdAt,
       }
     });

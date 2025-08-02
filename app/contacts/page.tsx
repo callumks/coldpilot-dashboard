@@ -1,17 +1,44 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Upload, Search, Filter, Users, Mail, Calendar, MoreVertical } from 'lucide-react';
+import { Plus, Upload, Search, Filter, Users, Mail, Calendar, MoreVertical, X } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import CSVUpload from '../../src/components/CSVUpload';
 import AddContactModal from '../../src/components/AddContactModal';
+import LeadScoreIndicator from '../../src/components/LeadScoreIndicator';
+import ContactQuickActions from '../../src/components/ContactQuickActions';
+import SmartTagsSuggestion from '../../src/components/SmartTagsSuggestion';
 
 const Contacts: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingContact, setEditingContact] = useState<any>(null);
+  const [hoveredContactId, setHoveredContactId] = useState<number | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Contact action handlers
+  const handleEditContact = (contact: any) => {
+    setEditingContact(contact);
+    setShowEditModal(true);
+  };
+
+  const handleMessageContact = (contact: any) => {
+    alert(`🚀 Messaging ${contact.name} coming soon! This will integrate with our campaign system.`);
+  };
+
+  const handleDeleteContact = (contactId: number) => {
+    // In a real app, this would call an API
+    console.log('Delete contact:', contactId);
+    alert('🗑️ Contact deletion will be implemented with proper API integration.');
+  };
+
+  const handleUpdateContactTags = (contactId: number, newTags: string[]) => {
+    // In a real app, this would update the contact in the database
+    console.log('Update tags for contact:', contactId, newTags);
+  };
 
   // Mock contact data
   const contacts = [
@@ -192,11 +219,30 @@ const Contacts: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-white/[0.05]">
                 {filteredContacts.map((contact) => (
-                  <tr key={contact.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr 
+                    key={contact.id} 
+                    className="hover:bg-white/[0.02] transition-colors"
+                    onMouseEnter={() => setHoveredContactId(contact.id)}
+                    onMouseLeave={() => setHoveredContactId(null)}
+                  >
                     <td className="px-6 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-white">{contact.name}</p>
-                        <p className="text-xs text-gray-500">{contact.email}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-medium text-white">{contact.name}</p>
+                            <LeadScoreIndicator 
+                              contact={{
+                                company: contact.company,
+                                position: contact.status, // Using status as position for demo
+                                email: contact.email,
+                                source: contact.source,
+                                lastContacted: contact.lastContacted
+                              }}
+                              size="sm"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500">{contact.email}</p>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -226,9 +272,13 @@ const Contacts: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <button className="p-1 hover:bg-white/[0.05] rounded-md transition-colors">
-                        <MoreVertical className="h-4 w-4 text-gray-400" />
-                      </button>
+                      <ContactQuickActions
+                        contact={contact}
+                        onEdit={handleEditContact}
+                        onMessage={handleMessageContact}
+                        onDelete={handleDeleteContact}
+                        isVisible={hoveredContactId === contact.id}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -300,6 +350,56 @@ const Contacts: React.FC = () => {
           }}
           onClose={() => setShowAddModal(false)}
         />
+      )}
+
+      {/* Edit Contact Modal */}
+      {showEditModal && editingContact && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-medium text-white">Edit Contact</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-400" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Tags</label>
+                <SmartTagsSuggestion
+                  contact={{
+                    company: editingContact.company,
+                    position: editingContact.status, // Using status as position for demo
+                    email: editingContact.email
+                  }}
+                  existingTags={editingContact.tags || []}
+                  onTagsChange={(newTags) => handleUpdateContactTags(editingContact.id, newTags)}
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    alert('💾 Contact updates will be saved to the database when the backend is connected.');
+                    setShowEditModal(false);
+                  }}
+                  className="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );
