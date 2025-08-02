@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, X, Sparkles } from 'lucide-react';
 
 interface SmartTagsSuggestionProps {
@@ -131,7 +131,7 @@ const SmartTagsSuggestion: React.FC<SmartTagsSuggestionProps> = ({
     }
 
     // Remove duplicates and filter out existing tags
-    const uniqueTags = [...new Set(tags)]
+    const uniqueTags = Array.from(new Set(tags))
       .filter(tag => !existingTags.includes(tag))
       .slice(0, maxSuggestions);
 
