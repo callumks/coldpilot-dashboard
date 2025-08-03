@@ -22,11 +22,12 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relationships
-  subscription Subscription?
-  contacts     Contact[]
-  campaigns    Campaign[]
-  conversations Conversation[]
-  analytics    Analytics[]
+  subscription    Subscription?
+  contacts        Contact[]
+  campaigns       Campaign[]
+  conversations   Conversation[]
+  analytics       Analytics[]
+  emailTemplates  EmailTemplate[]
 
   @@map("users")
 }
@@ -74,30 +75,163 @@ model Contact {
   updatedAt      DateTime      @updatedAt
 
   // Relationships
-  userId        String
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversations Conversation[]
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations    Conversation[]
+  campaignContacts CampaignContact[]  // Campaign assignments
+  campaignEvents   CampaignEvent[]    // Activity tracking
 
   @@map("contacts")
 }
 
-// Campaign model - for outreach campaigns
+// Campaign model - enhanced for multi-channel outreach campaigns
 model Campaign {
-  id          String         @id @default(cuid())
-  name        String
-  description String?
-  status      CampaignStatus @default(DRAFT)
-  startDate   DateTime?
-  endDate     DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                  String         @id @default(cuid())
+  name                String
+  description         String?
+  status              CampaignStatus @default(DRAFT)
+  channel             CampaignChannel @default(EMAIL) // Future: SMS, TELEGRAM
+  
+  // Targeting & Assignment
+  targetTags          String[]       // Tag-based filtering
+  minLeadScore        String?        // e.g., "WARM", "HOT"
+  excludePrevious     Boolean        @default(true) // Exclude previously messaged
+  
+  // Scheduling & Limits
+  startDate           DateTime?
+  endDate             DateTime?
+  dailySendLimit      Int            @default(150) // Daily sending limit
+  sendingWindow       Json?          // {start: "09:00", end: "17:00", weekdaysOnly: true}
+  timezone            String         @default("UTC")
+  
+  // Performance Tracking
+  totalContacts       Int            @default(0)
+  emailsSent          Int            @default(0)
+  emailsDelivered     Int            @default(0)
+  emailsOpened        Int            @default(0)
+  emailsBounced       Int            @default(0)
+  emailsReplied       Int            @default(0)
+  
+  // Calculated Metrics
+  openRate            Float          @default(0)
+  replyRate           Float          @default(0)
+  bounceRate          Float          @default(0)
+  
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // Relationships
+  userId              String
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  steps               CampaignStep[]
+  contacts            CampaignContact[]
+  events              CampaignEvent[]
+  conversations       Conversation[]
+
+  @@map("campaigns")
+}
+
+// Campaign Steps - email sequence management
+model CampaignStep {
+  id              String    @id @default(cuid())
+  stepNumber      Int       // 1, 2, 3, etc.
+  name            String    // "Initial Outreach", "Follow-up 1"
+  delayDays       Int       @default(3) // Days after previous step
+  isActive        Boolean   @default(true) // Can be toggled on/off
+  
+  // Email Content
+  emailTemplateId String?
+  emailTemplate   EmailTemplate? @relation(fields: [emailTemplateId], references: [id], onDelete: SetNull)
+  
+  // Performance by Step
+  sent            Int       @default(0)
+  delivered       Int       @default(0)
+  opened          Int       @default(0)
+  replied         Int       @default(0)
+  bounced         Int       @default(0)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  campaignId      String
+  campaign        Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, stepNumber])
+  @@map("campaign_steps")
+}
+
+// Email Templates - reusable email content
+model EmailTemplate {
+  id            String    @id @default(cuid())
+  name          String
+  subject       String
+  bodyHtml      String
+  bodyText      String
+  isAiGenerated Boolean   @default(false)
+  variables     String[]  // ["firstName", "company", "linkedinUrl"]
+  
+  // Template Performance (across all uses)
+  timesUsed     Int       @default(0)
+  avgOpenRate   Float     @default(0)
+  avgReplyRate  Float     @default(0)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relationships
   userId        String
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversations Conversation[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignSteps CampaignStep[]
 
-  @@map("campaigns")
+  @@map("email_templates")
+}
+
+// Campaign Contacts - tracks which contacts are in which campaigns
+model CampaignContact {
+  id              String                @id @default(cuid())
+  currentStep     Int                   @default(1) // Which step they're on
+  status          CampaignContactStatus @default(PENDING)
+  
+  // Timeline Tracking
+  addedAt         DateTime              @default(now())
+  lastEmailSent   DateTime?
+  nextEmailDue    DateTime?
+  completedAt     DateTime? // When they finished the sequence
+  
+  // Engagement Metrics
+  emailsSent      Int                   @default(0)
+  emailsOpened    Int                   @default(0)
+  emailsReplied   Int                   @default(0)
+  lastOpenedAt    DateTime?
+  lastRepliedAt   DateTime?
+
+  // Relationships
+  campaignId      String
+  campaign        Campaign              @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactId       String
+  contact         Contact               @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, contactId])
+  @@map("campaign_contacts")
+}
+
+// Campaign Events - detailed activity tracking
+model CampaignEvent {
+  id                String            @id @default(cuid())
+  eventType         CampaignEventType
+  stepNumber        Int? // Which step this event relates to
+  emailMessageId    String? // External email provider ID
+  metadata          Json? // Additional event data
+  timestamp         DateTime          @default(now())
+
+  // Relationships
+  campaignId        String
+  campaign          Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactId         String
+  contact           Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@map("campaign_events")
 }
 
 // Conversation model - for tracking email threads
@@ -251,4 +385,34 @@ enum WebhookStatus {
   SUCCESS
   FAILED
   RETRYING
+}
+
+// New Campaign System Enums
+enum CampaignChannel {
+  EMAIL
+  SMS      // Future multi-channel support
+  TELEGRAM // Future multi-channel support
+}
+
+enum CampaignContactStatus {
+  PENDING           // Added to campaign but not started
+  IN_PROGRESS       // Currently receiving emails
+  COMPLETED         // Finished the sequence
+  PAUSED           // Manually paused
+  REPLIED          // Replied to an email (auto-paused)
+  BOUNCED          // Email bounced (auto-paused)
+  UNSUBSCRIBED     // Opted out
+}
+
+enum CampaignEventType {
+  CONTACT_ADDED     // Contact assigned to campaign
+  EMAIL_SENT        // Email dispatched
+  EMAIL_DELIVERED   // Email successfully delivered
+  EMAIL_OPENED      // Email opened by recipient
+  EMAIL_CLICKED     // Link clicked in email
+  EMAIL_REPLIED     // Reply received
+  EMAIL_BOUNCED     // Email bounced
+  EMAIL_UNSUBSCRIBED // Unsubscribe request
+  CONTACT_PAUSED    // Contact manually paused
+  CONTACT_COMPLETED // Contact finished sequence
 }
