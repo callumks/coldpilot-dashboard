@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     // Build campaign filter condition
     const campaignWhere = campaignFilter === 'all' ? {} : { 
-      name: { contains: campaignFilter, mode: 'insensitive' } 
+      name: { contains: campaignFilter, mode: Prisma.QueryMode.insensitive } 
     };
 
     // Get campaigns for stats calculation
