@@ -9,6 +9,7 @@ import LeadScoreIndicator from '../../src/components/LeadScoreIndicator';
 import ContactQuickActions from '../../src/components/ContactQuickActions';
 import SmartTagsSuggestion from '../../src/components/SmartTagsSuggestion';
 import AILeadSourcing from '../../src/components/AILeadSourcing';
+import SubscriptionGate from '../../src/components/SubscriptionGate';
 
 interface Contact {
   id: string;

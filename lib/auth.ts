@@ -21,12 +21,42 @@ export async function getCurrentUser() {
       return null;
     }
 
-    const user = await prisma.user.findUnique({
+    // Try to find existing user
+    let user = await prisma.user.findUnique({
       where: { clerkId: userId },
       include: {
         subscription: true,
       },
     });
+
+    // If user doesn't exist, create them automatically
+    if (!user) {
+      console.log('🔄 Creating new user in database:', userId);
+      
+      // Get user details from Clerk
+      const { currentUser } = await import('@clerk/nextjs/server');
+      const clerkUser = await currentUser();
+      
+      if (!clerkUser) {
+        console.error('Could not get Clerk user details');
+        return null;
+      }
+
+      user = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          email: clerkUser.emailAddresses[0]?.emailAddress || '',
+          firstName: clerkUser.firstName || null,
+          lastName: clerkUser.lastName || null,
+          imageUrl: clerkUser.imageUrl || null,
+        },
+        include: {
+          subscription: true,
+        },
+      });
+
+      console.log('✅ User created successfully:', user.id);
+    }
 
     return user;
   } catch (error) {
@@ -95,6 +125,32 @@ export async function checkFeatureAccess(feature: string): Promise<boolean> {
   };
 
   return featureAccess[subscription.plan]?.includes(feature) || false;
+}
+
+export async function requireActiveSubscription(): Promise<UserSubscription> {
+  const subscription = await getUserSubscription();
+  
+  if (!subscription || !subscription.isActive) {
+    throw new Error('Active subscription required');
+  }
+
+  return subscription;
+}
+
+export async function getSubscriptionStatus(): Promise<{
+  hasSubscription: boolean;
+  plan?: Plan;
+  status?: SubscriptionStatus;
+  isActive: boolean;
+}> {
+  const subscription = await getUserSubscription();
+  
+  return {
+    hasSubscription: !!subscription,
+    plan: subscription?.plan,
+    status: subscription?.status,
+    isActive: subscription?.isActive || false,
+  };
 }
 
 export function formatSubscriptionStatus(status: SubscriptionStatus): string {

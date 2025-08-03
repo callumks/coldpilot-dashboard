@@ -1,37 +1,18 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { getUserSubscription } from '../../../../lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSubscriptionStatus } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const subscriptionStatus = await getSubscriptionStatus();
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const subscription = await getUserSubscription();
-    
-    if (!subscription) {
-      return NextResponse.json(null, { status: 404 });
-    }
-
-    return NextResponse.json(subscription);
-
+    return NextResponse.json(subscriptionStatus);
   } catch (error) {
-    console.error('Error fetching user subscription:', error);
-    
+    console.error('Error getting subscription status:', error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        message: error instanceof globalThis.Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
+      { hasSubscription: false, isActive: false },
+      { status: 200 } // Don't return error, just false status
     );
   }
-} 
+}
