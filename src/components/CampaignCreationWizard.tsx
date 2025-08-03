@@ -623,7 +623,7 @@ Best regards,
             />
             <label htmlFor="launch-draft" className="text-gray-300">
               <span className="font-medium">Save as Draft</span>
-              <p className="text-sm text-gray-500">Create campaign but don't start sending yet</p>
+              <p className="text-sm text-gray-500">Create campaign but don&apos;t start sending yet</p>
             </label>
           </div>
           
