@@ -52,10 +52,8 @@ const ContactQuickActions: React.FC<ContactQuickActionsProps> = ({
     setShowDeleteConfirm(false);
   };
 
-  if (!isVisible && !showDeleteConfirm) return null;
-
   return (
-    <div className="flex items-center gap-1 transition-all duration-200">
+    <div className={`flex items-center justify-end gap-1 transition-all duration-200 min-w-[140px] ${!isVisible && !showDeleteConfirm ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       {showDeleteConfirm ? (
         // Delete confirmation state
         <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-1">
