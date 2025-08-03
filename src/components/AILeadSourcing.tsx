@@ -94,8 +94,8 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -109,7 +109,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/[0.05] rounded-lg"
+            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -143,7 +143,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
                   value={title}
                   onChange={(e) => handleJobTitleChange(index, e.target.value)}
                   placeholder="e.g., CEO, VP of Sales, Marketing Director"
-                  className="flex-1 px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
                 {formData.jobTitles.length > 1 && (
                   <button
@@ -192,7 +192,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
                 value={formData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 placeholder="e.g., United States, California, San Francisco"
-                className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
           </div>
@@ -229,7 +229,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
                       : formData.sources.filter(s => s !== 'apollo');
                     handleInputChange('sources', newSources);
                   }}
-                  className="rounded border-gray-600 bg-white/[0.02] text-blue-500 focus:ring-blue-500"
+                  className="rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500"
                 />
                 <span className="text-gray-300">Apollo.io</span>
               </label>
@@ -243,7 +243,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
                       : formData.sources.filter(s => s !== 'linkedin');
                     handleInputChange('sources', newSources);
                   }}
-                  className="rounded border-gray-600 bg-white/[0.02] text-blue-500 focus:ring-blue-500"
+                  className="rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500"
                 />
                 <span className="text-gray-300">LinkedIn Sales Navigator</span>
               </label>
@@ -279,7 +279,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
         <div className="flex gap-3 mt-6">
           <button
             onClick={() => setIsOpen(false)}
-            className="flex-1 px-4 py-3 bg-white/[0.02] border border-white/[0.08] text-gray-300 rounded-lg hover:bg-white/[0.05] transition-all duration-200"
+            className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-all duration-200"
           >
             Cancel
           </button>
