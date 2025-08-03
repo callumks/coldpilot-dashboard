@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Zap, Target, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, Zap, Target, CheckCircle, AlertCircle, X } from 'lucide-react';
 
 interface AILeadSourcingProps {
   onLeadsSourced?: (results: any) => void;
@@ -85,7 +85,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all font-medium"
+        className="flex items-center gap-3 px-6 py-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] text-white rounded-xl transition-all duration-200 font-medium"
       >
         <Zap className="h-4 w-4" />
         AI Lead Sourcing
@@ -99,8 +99,8 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
-              <Zap className="h-5 w-5 text-white" />
+            <div className="p-2 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+              <Zap className="h-5 w-5 text-blue-400" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-white">AI Lead Sourcing</h2>
@@ -109,9 +109,9 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/[0.05] rounded-lg"
           >
-            ✕
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -143,7 +143,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
                   value={title}
                   onChange={(e) => handleJobTitleChange(index, e.target.value)}
                   placeholder="e.g., CEO, VP of Sales, Marketing Director"
-                  className="flex-1 px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+                  className="flex-1 px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
                 {formData.jobTitles.length > 1 && (
                   <button
@@ -157,7 +157,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
             ))}
             <button
               onClick={addJobTitle}
-              className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
             >
               + Add another job title
             </button>
@@ -172,7 +172,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
               <select
                 value={formData.companySize}
                 onChange={(e) => handleInputChange('companySize', e.target.value)}
-                className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="" className="bg-[#1a1a1a]">Any size</option>
                 <option value="1-10" className="bg-[#1a1a1a]">1-10 employees</option>
@@ -192,7 +192,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
                 value={formData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 placeholder="e.g., United States, California, San Francisco"
-                className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
           </div>
@@ -208,7 +208,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
               onChange={(e) => handleInputChange('leadCount', parseInt(e.target.value))}
               min="1"
               max="500"
-              className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">Maximum 500 leads per search</p>
           </div>
@@ -279,14 +279,14 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
         <div className="flex gap-3 mt-6">
           <button
             onClick={() => setIsOpen(false)}
-            className="flex-1 px-4 py-3 bg-white/[0.02] border border-white/[0.08] text-gray-300 rounded-lg hover:bg-white/[0.05] transition-all"
+            className="flex-1 px-4 py-3 bg-white/[0.02] border border-white/[0.08] text-gray-300 rounded-lg hover:bg-white/[0.05] transition-all duration-200"
           >
             Cancel
           </button>
           <button
             onClick={handleSourceLead}
             disabled={!isFormValid || isLoading || formData.sources.length === 0}
-            className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
