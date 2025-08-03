@@ -200,42 +200,85 @@ FORMAT YOUR RESPONSE AS JSON:
 }
 
 async function callOpenAIAPI(prompt: string) {
-  // TODO: Implement actual OpenAI API integration
-  // This would require OpenAI API key and proper error handling
+  console.log('🔮 Calling OpenAI GPT-4 API...');
   
-  console.log('🔮 Calling OpenAI API...');
-  
-  // Mock response for now - replace with actual OpenAI call
-  const mockResponse = {
-    subjectLines: [
-      "Quick question about {{company}}'s growth strategy",
-      "5-minute chat about scaling {{company}}?",
-      "{{name}}, saw your recent post about {{industry}} trends"
-    ],
-    emailBody: `Hi {{name}},
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert cold email copywriter. Always respond with valid JSON only, no additional text.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7,
+      })
+    });
 
-I noticed {{company}} has been expanding rapidly in the {{industry}} space - congrats on the growth!
+    if (!response.ok) {
+      console.error('OpenAI API error:', response.status, response.statusText);
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
 
-I'm reaching out because we've helped similar companies like {{company}} streamline their operations and boost efficiency by 40% on average. 
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    
+    if (!content) {
+      throw new Error('No content received from OpenAI');
+    }
 
-Given your role as {{position}}, I thought you might be interested in a quick conversation about how we could help {{company}} achieve similar results.
+    // Parse the JSON response
+    try {
+      const parsedResponse = JSON.parse(content);
+      console.log('✅ Successfully generated AI email content');
+      return parsedResponse;
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response as JSON:', content);
+      throw new Error('Invalid JSON response from OpenAI');
+    }
 
-Would you be open to a brief 15-minute call this week to explore how we might support your goals?
+  } catch (error) {
+    console.error('OpenAI API call failed:', error);
+    
+    // Fallback to enhanced mock response
+    return {
+      subjectLines: [
+        "Quick question about {{company}}'s growth strategy",
+        "5-minute chat about scaling {{company}}?", 
+        "{{name}}, noticed your {{industry}} expansion"
+      ],
+      emailBody: `Hi {{name}},
+
+I noticed {{company}} has been making waves in the {{industry}} space. Impressive growth trajectory!
+
+We've helped similar companies streamline operations and boost efficiency by 40%+ on average. Given your role as {{position}}, I thought this might be relevant.
+
+Would you be open to a brief 15-minute conversation about how we might support {{company}}'s continued success?
 
 Best regards,
 {{senderName}}`,
-    callToAction: "Book a 15-minute call",
-    personalizations: ["{{name}}", "{{company}}", "{{position}}", "{{industry}}", "{{senderName}}"],
-    spamScore: "Low",
-    tips: [
-      "Use the recipient's name and company for better personalization",
-      "Reference specific industry trends or company news when possible",
-      "Keep the email under 150 words for better response rates",
-      "Test different subject lines to optimize open rates"
-    ]
-  };
-
-  return mockResponse;
+      callToAction: "Schedule a brief call",
+      personalizations: ["{{name}}", "{{company}}", "{{position}}", "{{industry}}", "{{senderName}}"],
+      spamScore: "Low",
+      tips: [
+        "AI fallback used - check OpenAI API key",
+        "Personalize with specific company details",
+        "Keep emails under 150 words for better response rates"
+      ],
+      isAIGenerated: false // Indicates fallback was used
+    };
+  }
 }
 
 function parseAIEmailResponse(response: any) {
