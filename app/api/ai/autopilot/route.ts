@@ -288,7 +288,9 @@ async function scheduleOptimizationCheck(campaignId: string, timing: string) {
 }
 
 // Background Autopilot Engine (would run as separate process)
-export async function runAutopilotEngine() {
+// NOTE: This function is not exported as it's not a valid Next.js route export
+// It would be implemented as a separate background job/cron process
+async function runAutopilotEngine() {
   console.log('🔄 Running Autopilot Engine...');
   
   // This function would:
