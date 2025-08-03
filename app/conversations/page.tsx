@@ -240,7 +240,7 @@ const Conversations: React.FC = () => {
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl p-8 text-center">
           <h3 className="text-xl font-medium text-white mb-4">No conversations found</h3>
           <p className="text-gray-400 mb-6">
-            No results found for "{searchQuery}". Try a different search term.
+            No results found for &ldquo;{searchQuery}&rdquo;. Try a different search term.
           </p>
           <button 
             onClick={() => setSearchQuery('')}

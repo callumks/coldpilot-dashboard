@@ -258,7 +258,7 @@ const Analytics: React.FC = () => {
           <div className="text-center">
             <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Chart visualization coming soon</p>
-            <p className="text-sm mt-2">We're building advanced analytics charts</p>
+            <p className="text-sm mt-2">We&apos;re building advanced analytics charts</p>
           </div>
         </div>
       </div>
