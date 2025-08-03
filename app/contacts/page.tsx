@@ -8,6 +8,7 @@ import AddContactModal from '../../src/components/AddContactModal';
 import LeadScoreIndicator from '../../src/components/LeadScoreIndicator';
 import ContactQuickActions from '../../src/components/ContactQuickActions';
 import SmartTagsSuggestion from '../../src/components/SmartTagsSuggestion';
+import AILeadSourcing from '../../src/components/AILeadSourcing';
 
 interface Contact {
   id: string;
@@ -179,6 +180,8 @@ const Contacts: React.FC = () => {
           <Plus className="h-4 w-4" />
           Add Contact
         </button>
+        
+        <AILeadSourcing onLeadsSourced={() => setRefreshTrigger(prev => prev + 1)} />
         <button 
           onClick={() => setShowUploadModal(true)}
           className="flex items-center gap-3 px-6 py-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] text-white rounded-xl transition-all duration-200 font-medium"

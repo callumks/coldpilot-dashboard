@@ -5,7 +5,7 @@ import {
   X, Plus, Users, Mail, Clock, Target, Settings, 
   ArrowRight, ArrowLeft, Check, AlertCircle, 
   Flame, Thermometer, Snowflake, Tag, Calendar,
-  Send, Pause, Edit3, Trash2
+  Send, Pause, Edit3, Trash2, Zap
 } from 'lucide-react';
 
 interface CampaignCreationWizardProps {
@@ -54,6 +54,15 @@ const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [audiencePreview, setAudiencePreview] = useState({ count: 0, contacts: [] });
+  const [showAIEmailGenerator, setShowAIEmailGenerator] = useState(false);
+  const [currentStepIdForAI, setCurrentStepIdForAI] = useState<string | null>(null);
+  const [aiEmailData, setAIEmailData] = useState({
+    campaignGoal: '',
+    targetIndustry: '',
+    tone: 'professional',
+    emailType: 'initial_outreach',
+    customInstructions: ''
+  });
   
   const [formData, setFormData] = useState<CampaignForm>({
     name: '',
@@ -139,6 +148,42 @@ const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
         step.id === stepId ? { ...step, ...updates } : step
       )
     }));
+  };
+
+  // AI Email Generation Function
+  const generateAIEmailForStep = (stepId: string) => {
+    setCurrentStepIdForAI(stepId);
+    setShowAIEmailGenerator(true);
+  };
+
+  const handleAIEmailGeneration = async () => {
+    if (!currentStepIdForAI) return;
+
+    try {
+      const response = await fetch('/api/ai/email-generation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aiEmailData)
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        const content = data.emailContent;
+        // Update the specific step with AI-generated content
+        updateStep(currentStepIdForAI, {
+          subject: content.subjectLines[0], // Use the first subject line
+          body: content.emailBody
+        });
+        setShowAIEmailGenerator(false);
+        setCurrentStepIdForAI(null);
+      } else {
+        alert(data.error || 'Failed to generate email content');
+      }
+    } catch (error) {
+      console.error('AI email generation error:', error);
+      alert('Failed to generate email content');
+    }
   };
 
   const removeStep = (stepId: string) => {
@@ -462,9 +507,19 @@ const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Subject Line *
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Subject Line *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => generateAIEmailForStep(step.id)}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-md hover:from-purple-600 hover:to-blue-600 transition-all"
+                  >
+                    <Zap className="h-3 w-3" />
+                    AI Generate
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={step.subject}
@@ -745,6 +800,122 @@ Best regards,
           </div>
         </div>
       </div>
+
+      {/* AI Email Generator Modal */}
+      {showAIEmailGenerator && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-white">AI Email Generator</h3>
+                  <p className="text-sm text-gray-400">Let AI craft your perfect outreach email</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAIEmailGenerator(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Campaign Goal *
+                </label>
+                <input
+                  type="text"
+                  value={aiEmailData.campaignGoal}
+                  onChange={(e) => setAIEmailData(prev => ({ ...prev, campaignGoal: e.target.value }))}
+                  placeholder="e.g., Book demos for our SaaS platform"
+                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Target Industry *
+                </label>
+                <input
+                  type="text"
+                  value={aiEmailData.targetIndustry}
+                  onChange={(e) => setAIEmailData(prev => ({ ...prev, targetIndustry: e.target.value }))}
+                  placeholder="e.g., SaaS, E-commerce, Healthcare"
+                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Tone
+                  </label>
+                  <select
+                    value={aiEmailData.tone}
+                    onChange={(e) => setAIEmailData(prev => ({ ...prev, tone: e.target.value }))}
+                    className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  >
+                    <option value="professional" className="bg-[#1a1a1a]">Professional</option>
+                    <option value="casual" className="bg-[#1a1a1a]">Casual</option>
+                    <option value="direct" className="bg-[#1a1a1a]">Direct</option>
+                    <option value="humorous" className="bg-[#1a1a1a]">Humorous</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Email Type
+                  </label>
+                  <select
+                    value={aiEmailData.emailType}
+                    onChange={(e) => setAIEmailData(prev => ({ ...prev, emailType: e.target.value }))}
+                    className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  >
+                    <option value="initial_outreach" className="bg-[#1a1a1a]">Initial Outreach</option>
+                    <option value="follow_up" className="bg-[#1a1a1a]">Follow-up</option>
+                    <option value="break_up" className="bg-[#1a1a1a]">Break-up Email</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Custom Instructions
+                </label>
+                <textarea
+                  value={aiEmailData.customInstructions}
+                  onChange={(e) => setAIEmailData(prev => ({ ...prev, customInstructions: e.target.value }))}
+                  placeholder="Any specific requirements or style preferences..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAIEmailGenerator(false)}
+                className="flex-1 px-4 py-3 bg-white/[0.02] border border-white/[0.08] text-gray-300 rounded-lg hover:bg-white/[0.05] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAIEmailGeneration}
+                disabled={!aiEmailData.campaignGoal || !aiEmailData.targetIndustry}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Zap className="h-4 w-4" />
+                Generate Email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
