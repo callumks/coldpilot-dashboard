@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Upload, Search, Filter, Users, Mail, Calendar, MoreVertical, X } from 'lucide-react';
+import { Plus, Upload, Search, Filter, Users, Mail, Calendar, MoreVertical, X, Download } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import CSVUpload from '../../src/components/CSVUpload';
 import AddContactModal from '../../src/components/AddContactModal';
@@ -38,6 +38,32 @@ const Contacts: React.FC = () => {
   const handleUpdateContactTags = (contactId: number, newTags: string[]) => {
     // In a real app, this would update the contact in the database
     console.log('Update tags for contact:', contactId, newTags);
+  };
+
+  const handleDownloadCSV = async () => {
+    try {
+      console.log('📥 Starting CSV download...');
+      const response = await fetch('/api/contacts/export');
+      
+      if (!response.ok) {
+        throw new Error('Failed to download CSV');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contacts-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      console.log('✅ CSV download completed');
+    } catch (error) {
+      console.error('💥 CSV download error:', error);
+      alert('Failed to download CSV. Please try again.');
+    }
   };
 
   // Mock contact data
@@ -146,6 +172,14 @@ const Contacts: React.FC = () => {
           <Mail className="h-4 w-4" />
           Bulk Email
         </button>
+        
+        <button
+          onClick={handleDownloadCSV}
+          className="flex items-center gap-3 px-6 py-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] text-white rounded-xl transition-all duration-200 font-medium"
+        >
+          <Download className="h-4 w-4" />
+          Download CSV
+        </button>
       </div>
 
       {/* Leads by Source Cards */}
@@ -177,11 +211,18 @@ const Contacts: React.FC = () => {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
           <input
             type="text"
-            placeholder="Search contacts by name, company, or email..."
+            placeholder="Search by name, company, email, or tags (e.g. 'Founder', 'Tech', 'C-Level')..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-sm"
           />
+          {searchQuery && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md border border-blue-500/20">
+                🏷️ Tag search
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Status Filter */}

@@ -158,10 +158,45 @@ const LeadScoreIndicator: React.FC<LeadScoreIndicatorProps> = ({ contact, size =
     lg: 'h-5 w-5'
   };
 
+  const getTooltipText = () => {
+    const factors = [];
+    
+    // Build tooltip based on scoring factors
+    if (contact.company) {
+      const company = contact.company.toLowerCase();
+      if (company.includes('tech') || company.includes('software') || company.includes('ai')) {
+        factors.push('✅ Tech company (+3 pts)');
+      }
+      if (company.includes('inc') || company.includes('corp')) {
+        factors.push('✅ Established business (+2 pts)');
+      }
+    }
+    
+    if (contact.position) {
+      const position = contact.position.toLowerCase();
+      if (position.includes('ceo') || position.includes('founder') || position.includes('president')) {
+        factors.push('✅ Decision maker (+4 pts)');
+      } else if (position.includes('director') || position.includes('vp')) {
+        factors.push('✅ Senior leadership (+4 pts)');
+      }
+    }
+    
+    const domain = contact.email.split('@')[1]?.toLowerCase();
+    if (domain && !domain.includes('gmail') && !domain.includes('yahoo') && !domain.includes('hotmail')) {
+      factors.push('✅ Business email (+1 pt)');
+    }
+    
+    if (contact.source === 'LINKEDIN') {
+      factors.push('✅ LinkedIn source (+2 pts)');
+    }
+
+    return `${config.description}\n\nScoring factors:\n${factors.join('\n') || 'Basic scoring applied'}`;
+  };
+
   return (
     <div 
-      className={`inline-flex items-center gap-1.5 rounded-full border ${config.bgColor} ${config.borderColor} ${sizeClasses[size]}`}
-      title={config.description}
+      className={`inline-flex items-center gap-1.5 rounded-full border ${config.bgColor} ${config.borderColor} ${sizeClasses[size]} cursor-help`}
+      title={getTooltipText()}
     >
       <Icon className={`${iconSizes[size]} ${config.color}`} />
       <span className={`font-medium ${config.color}`}>
