@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, Play, Pause, BarChart3, Users, Mail, 
   Calendar, MoreVertical, Edit3, Trash2, Copy,
@@ -9,59 +9,57 @@ import {
 import DashboardLayout from '../../src/components/DashboardLayout';
 import CampaignCreationWizard from '../../src/components/CampaignCreationWizard';
 
+interface Campaign {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  channel: string;
+  totalContacts: number;
+  emailsSent: number;
+  emailsOpened: number;
+  emailsReplied: number;
+  openRate: number;
+  replyRate: number;
+  createdAt: string;
+  startDate: string | null;
+  steps: number;
+}
+
 const Campaigns: React.FC = () => {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
-  const [campaigns, setCampaigns] = useState([
-    // Mock campaign data
-    {
-      id: 1,
-      name: 'Q1 SaaS Outreach',
-      description: 'Target SaaS founders for product demo',
-      status: 'ACTIVE',
-      channel: 'EMAIL',
-      totalContacts: 234,
-      emailsSent: 156,
-      emailsOpened: 78,
-      emailsReplied: 12,
-      openRate: 50.0,
-      replyRate: 7.7,
-      createdAt: '2024-01-15',
-      startDate: '2024-01-20',
-      steps: 3
-    },
-    {
-      id: 2,
-      name: 'Enterprise Prospects',
-      description: 'Large company decision makers',
-      status: 'PAUSED',
-      channel: 'EMAIL',
-      totalContacts: 89,
-      emailsSent: 45,
-      emailsOpened: 23,
-      emailsReplied: 4,
-      openRate: 51.1,
-      replyRate: 8.9,
-      createdAt: '2024-01-10',
-      startDate: '2024-01-12',
-      steps: 4
-    },
-    {
-      id: 3,
-      name: 'Tech Startup Founders',
-      description: 'Early stage startup outreach',
-      status: 'DRAFT',
-      channel: 'EMAIL',
-      totalContacts: 145,
-      emailsSent: 0,
-      emailsOpened: 0,
-      emailsReplied: 0,
-      openRate: 0,
-      replyRate: 0,
-      createdAt: '2024-01-25',
-      startDate: null,
-      steps: 2
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch campaigns on component mount
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  const fetchCampaigns = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/campaigns');
+      if (!response.ok) {
+        throw new Error('Failed to fetch campaigns');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setCampaigns(data.campaigns);
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch (err) {
+      console.error('Error fetching campaigns:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load campaigns');
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -93,13 +91,13 @@ const Campaigns: React.FC = () => {
   };
 
   const handleCampaignCreated = (newCampaign: any) => {
-    // In real implementation, this would refresh from API
     console.log('Campaign created:', newCampaign);
     setShowCreateWizard(false);
-    // Refresh campaigns list
+    // Refresh campaigns list from API
+    fetchCampaigns();
   };
 
-  const handleCampaignAction = (campaignId: number, action: string) => {
+  const handleCampaignAction = (campaignId: string, action: string) => {
     console.log(`Campaign ${campaignId} action: ${action}`);
     // Implement campaign actions (play, pause, edit, delete, etc.)
     alert(`${action} action for campaign ${campaignId} - Coming soon!`);
@@ -203,7 +201,24 @@ const Campaigns: React.FC = () => {
           <h2 className="text-lg font-medium text-white">All Campaigns</h2>
         </div>
 
-        {campaigns.length === 0 ? (
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading campaigns...</p>
+          </div>
+        ) : error ? (
+          <div className="p-12 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-red-400 mb-2">Error loading campaigns</h3>
+            <p className="text-red-500 mb-6">{error}</p>
+            <button
+              onClick={fetchCampaigns}
+              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : campaigns.length === 0 ? (
           <div className="p-12 text-center">
             <Target className="h-12 w-12 text-gray-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-300 mb-2">No campaigns yet</h3>
@@ -242,7 +257,7 @@ const Campaigns: React.FC = () => {
                       <td className="px-6 py-4">
                         <div>
                           <p className="text-sm font-medium text-white">{campaign.name}</p>
-                          <p className="text-xs text-gray-500">{campaign.description}</p>
+                          <p className="text-xs text-gray-500">{campaign.description || 'No description'}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-gray-500">{campaign.steps} steps</span>
                             <span className="text-xs text-gray-600">•</span>

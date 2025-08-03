@@ -175,8 +175,12 @@ const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
         throw new Error('Failed to create campaign');
       }
 
-      const campaign = await response.json();
-      onCampaignCreated(campaign);
+      const result = await response.json();
+      if (result.success) {
+        onCampaignCreated(result.campaign);
+      } else {
+        throw new Error(result.error || 'Failed to create campaign');
+      }
       
     } catch (error) {
       console.error('Campaign creation error:', error);
