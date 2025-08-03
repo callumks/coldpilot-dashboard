@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,13 +49,13 @@ export async function GET(request: NextRequest) {
     // Add search filter
     if (search) {
       whereConditions.OR = [
-        { subject: { contains: search, mode: 'insensitive' } },
-        { preview: { contains: search, mode: 'insensitive' } },
+        { subject: { contains: search, mode: Prisma.QueryMode.insensitive } },
+        { preview: { contains: search, mode: Prisma.QueryMode.insensitive } },
         { contact: { 
           OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { company: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } }
+            { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            { company: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            { email: { contains: search, mode: Prisma.QueryMode.insensitive } }
           ]
         }}
       ];
