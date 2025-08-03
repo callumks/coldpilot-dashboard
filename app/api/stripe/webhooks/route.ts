@@ -101,20 +101,49 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const firstName = nameParts.length > 0 ? nameParts[0] : null;
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
     
-    // Create or update user
-    const user = await prisma.user.upsert({
-      where: { clerkId: clerkUserId },
-      update: {
-        email: session.customer_details?.email || '',
-      },
-      create: {
-        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        clerkId: clerkUserId,
-        email: session.customer_details?.email || '',
-        firstName: firstName,
-        lastName: lastName,
-      },
-    });
+    // Create or update user - handle existing email gracefully
+    let user;
+    try {
+      user = await prisma.user.upsert({
+        where: { clerkId: clerkUserId },
+        update: {
+          firstName: firstName,
+          lastName: lastName,
+        },
+        create: {
+          id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          clerkId: clerkUserId,
+          email: session.customer_details?.email || '',
+          firstName: firstName,
+          lastName: lastName,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+        // Email already exists, try to find existing user and update clerk ID
+        console.log('Email already exists, finding user by email...');
+        const existingUser = await prisma.user.findUnique({
+          where: { email: session.customer_details?.email || '' }
+        });
+        
+        if (existingUser) {
+          // Update the existing user with clerk ID
+          user = await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              clerkId: clerkUserId,
+              firstName: firstName || existingUser.firstName,
+              lastName: lastName || existingUser.lastName,
+            }
+          });
+          console.log(`✅ Updated existing user ${existingUser.id} with Clerk ID`);
+        } else {
+          throw error; // Re-throw if we can't find the user
+        }
+      } else {
+        throw error; // Re-throw other errors
+      }
+    }
 
     // Create subscription record
     await prisma.subscription.create({
@@ -126,8 +155,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         status: mapStripeStatus(subscription.status),
         plan: plan.toUpperCase() as 'BASIC' | 'PRO' | 'AGENCY',
         interval: interval.toUpperCase() as 'MONTHLY' | 'YEARLY',
-        currentPeriodStart: new Date(((subscription as any).current_period_start || (subscription as any).start_date || (subscription as any).created) * 1000),
-        currentPeriodEnd: new Date(((subscription as any).current_period_end || (subscription as any).billing_cycle_anchor || ((subscription as any).start_date || (subscription as any).created) + 2629746) * 1000),
+        currentPeriodStart: new Date((subscription as any).start_date * 1000),
+        currentPeriodEnd: new Date(((subscription as any).start_date + 2629746) * 1000), // Add 1 month in seconds
         trialStart: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
         trialEnd: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
         userId: user.id,

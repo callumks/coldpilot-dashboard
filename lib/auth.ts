@@ -33,29 +33,66 @@ export async function getCurrentUser() {
     if (!user) {
       console.log('🔄 Creating new user in database:', userId);
       
-      // Get user details from Clerk
-      const { currentUser } = await import('@clerk/nextjs/server');
-      const clerkUser = await currentUser();
-      
-      if (!clerkUser) {
-        console.error('Could not get Clerk user details');
+      try {
+        // Get user details from Clerk
+        const { currentUser } = await import('@clerk/nextjs/server');
+        const clerkUser = await currentUser();
+        
+        if (!clerkUser) {
+          console.error('Could not get Clerk user details');
+          return null;
+        }
+
+        const userEmail = clerkUser.emailAddresses[0]?.emailAddress || '';
+        
+        // Try to create user, handle email conflicts gracefully
+        try {
+          user = await prisma.user.create({
+            data: {
+              clerkId: userId,
+              email: userEmail,
+              firstName: clerkUser.firstName || null,
+              lastName: clerkUser.lastName || null,
+              imageUrl: clerkUser.imageUrl || null,
+            },
+            include: {
+              subscription: true,
+            },
+          });
+          console.log('✅ User created successfully:', user.id);
+        } catch (createError: any) {
+          if (createError.code === 'P2002' && createError.meta?.target?.includes('email')) {
+            // Email already exists, try to find and update existing user
+            console.log('Email already exists, finding existing user...');
+            const existingUser = await prisma.user.findUnique({
+              where: { email: userEmail },
+              include: { subscription: true }
+            });
+            
+            if (existingUser && !existingUser.clerkId) {
+              // Update existing user with Clerk ID
+              user = await prisma.user.update({
+                where: { id: existingUser.id },
+                data: { clerkId: userId },
+                include: { subscription: true }
+              });
+              console.log('✅ Updated existing user with Clerk ID:', user.id);
+            } else if (existingUser && existingUser.clerkId === userId) {
+              // User already exists with same Clerk ID
+              user = existingUser;
+              console.log('✅ Found existing user:', user.id);
+            } else {
+              console.error('Email conflict but unable to resolve');
+              return null;
+            }
+          } else {
+            throw createError;
+          }
+        }
+      } catch (error) {
+        console.error('Error in auto user creation:', error);
         return null;
       }
-
-      user = await prisma.user.create({
-        data: {
-          clerkId: userId,
-          email: clerkUser.emailAddresses[0]?.emailAddress || '',
-          firstName: clerkUser.firstName || null,
-          lastName: clerkUser.lastName || null,
-          imageUrl: clerkUser.imageUrl || null,
-        },
-        include: {
-          subscription: true,
-        },
-      });
-
-      console.log('✅ User created successfully:', user.id);
     }
 
     return user;
