@@ -11,10 +11,12 @@ import {
   BarChart3,
   Users,
   Settings,
+  Target,
 } from "lucide-react";
 
 const navigationItems = [
   { icon: Home, label: "Dashboard", href: "/dashboard" },
+  { icon: Target, label: "Campaigns", href: "/campaigns" },
   { icon: MessageCircle, label: "Conversations", href: "/conversations" },
   { icon: BarChart3, label: "Analytics", href: "/analytics" },
   { icon: Users, label: "Contacts", href: "/contacts" },
