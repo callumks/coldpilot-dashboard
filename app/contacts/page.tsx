@@ -1,13 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Plus, Upload, Search, Filter, Users, Mail, Calendar, MoreVertical, X, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Upload, Search, Filter, Users, Mail, Calendar, MoreVertical, X, Download, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import CSVUpload from '../../src/components/CSVUpload';
 import AddContactModal from '../../src/components/AddContactModal';
 import LeadScoreIndicator from '../../src/components/LeadScoreIndicator';
 import ContactQuickActions from '../../src/components/ContactQuickActions';
 import SmartTagsSuggestion from '../../src/components/SmartTagsSuggestion';
+
+interface Contact {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+  position: string | null;
+  source: string;
+  status: string;
+  lastContacted: string | null;
+  tags: string[];
+  notes: string | null;
+  linkedinUrl: string | null;
+  phoneNumber: string | null;
+  createdAt: string;
+  activeCampaigns: number;
+  lastConversation: any;
+}
+
+interface LeadSource {
+  source: string;
+  count: number;
+  percentage: number;
+}
 
 const Contacts: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,8 +40,47 @@ const Contacts: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingContact, setEditingContact] = useState<any>(null);
-  const [hoveredContactId, setHoveredContactId] = useState<number | null>(null);
+  const [hoveredContactId, setHoveredContactId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [leadSources, setLeadSources] = useState<LeadSource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch contacts from API
+  useEffect(() => {
+    fetchContacts();
+  }, [refreshTrigger, searchQuery, selectedFilter]);
+
+  const fetchContacts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (selectedFilter !== 'All') params.append('status', selectedFilter);
+      
+      const response = await fetch(`/api/contacts?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch contacts');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setContacts(data.contacts);
+        setLeadSources(data.leadSources || []);
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch (err) {
+      console.error('Error fetching contacts:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load contacts');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Contact action handlers
   const handleEditContact = (contact: any) => {
@@ -29,15 +92,17 @@ const Contacts: React.FC = () => {
     alert(`🚀 Messaging ${contact.name} coming soon! This will integrate with our campaign system.`);
   };
 
-  const handleDeleteContact = (contactId: number) => {
+  const handleDeleteContact = (contactId: string) => {
     // In a real app, this would call an API
     console.log('Delete contact:', contactId);
     alert('🗑️ Contact deletion will be implemented with proper API integration.');
   };
 
-  const handleUpdateContactTags = (contactId: number, newTags: string[]) => {
+  const handleUpdateContactTags = (contactId: string, newTags: string[]) => {
     // In a real app, this would update the contact in the database
     console.log('Update tags for contact:', contactId, newTags);
+    // TODO: Implement contact update API
+    alert('🔄 Contact tag updates will be implemented in the next iteration');
   };
 
   const handleDownloadCSV = async () => {
@@ -66,77 +131,33 @@ const Contacts: React.FC = () => {
     }
   };
 
-  // Mock contact data
-  const contacts = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      company: 'TechCorp Inc.',
-      email: 'sarah.johnson@techcorp.com',
-      source: 'LinkedIn',
-      lastContacted: '2 days ago',
-      status: 'Active',
-      tags: ['Decision Maker', 'SaaS'],
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      company: 'StartupXYZ',
-      email: 'michael@startupxyz.io',
-      source: 'Cold Email',
-      lastContacted: '1 week ago',
-      status: 'Replied',
-      tags: ['Founder', 'Tech'],
-    },
-    {
-      id: 3,
-      name: 'Emily Rodriguez',
-      company: 'Enterprise Solutions',
-      email: 'emily.rodriguez@enterprise.com',
-      source: 'Referral',
-      lastContacted: '3 days ago',
-      status: 'Interested',
-      tags: ['VP Sales', 'Enterprise'],
-    },
-    {
-      id: 4,
-      name: 'David Kim',
-      company: 'Innovation Labs',
-      email: 'david.kim@innovationlabs.com',
-      source: 'Event',
-      lastContacted: '5 days ago',
-      status: 'Cold',
-      tags: ['CTO', 'AI/ML'],
-    },
-  ];
-
-  // Filter contacts based on search and status
-  const filteredContacts = contacts.filter(contact => {
-    const matchesSearch = contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         contact.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         contact.email.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilter = selectedFilter === 'All' || contact.status === selectedFilter;
-    
-    return matchesSearch && matchesFilter;
-  });
-
-  // Lead source data
-  const leadSources = [
-    { source: 'LinkedIn', count: 45, percentage: 35 },
-    { source: 'Cold Email', count: 32, percentage: 25 },
-    { source: 'Referral', count: 28, percentage: 22 },
-    { source: 'Event', count: 23, percentage: 18 },
-  ];
+  // Contacts are now fetched from API in useEffect
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active': return 'bg-green-500/10 text-green-400 border-green-500/20';
-      case 'Replied': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      case 'Interested': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-      case 'Cold': return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    switch (status.toUpperCase()) {
+      case 'CONTACTED': return 'bg-green-500/10 text-green-400 border-green-500/20';
+      case 'REPLIED': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      case 'INTERESTED': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+      case 'MEETING_SCHEDULED': return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+      case 'CLOSED_WON': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+      case 'CLOSED_LOST': return 'bg-red-500/10 text-red-400 border-red-500/20';
+      case 'COLD': 
       default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
     }
+  };
+
+  const formatLastContacted = (lastContacted: string | null) => {
+    if (!lastContacted) return 'Never';
+    
+    const date = new Date(lastContacted);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
   };
 
   return (
@@ -234,16 +255,36 @@ const Contacts: React.FC = () => {
             className="px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-sm"
           >
             <option value="All" className="bg-[#1a1a1a]">All Status</option>
-            <option value="Active" className="bg-[#1a1a1a]">Active</option>
-            <option value="Replied" className="bg-[#1a1a1a]">Replied</option>
-            <option value="Interested" className="bg-[#1a1a1a]">Interested</option>
-            <option value="Cold" className="bg-[#1a1a1a]">Cold</option>
+            <option value="COLD" className="bg-[#1a1a1a]">Cold</option>
+            <option value="CONTACTED" className="bg-[#1a1a1a]">Contacted</option>
+            <option value="REPLIED" className="bg-[#1a1a1a]">Replied</option>
+            <option value="INTERESTED" className="bg-[#1a1a1a]">Interested</option>
+            <option value="MEETING_SCHEDULED" className="bg-[#1a1a1a]">Meeting Scheduled</option>
+            <option value="CLOSED_WON" className="bg-[#1a1a1a]">Closed Won</option>
+            <option value="CLOSED_LOST" className="bg-[#1a1a1a]">Closed Lost</option>
           </select>
         </div>
       </div>
 
       {/* Contacts Table/List */}
-      {filteredContacts.length > 0 ? (
+      {loading ? (
+        <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading contacts...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl p-12 text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-red-400 mb-2">Error loading contacts</h3>
+          <p className="text-red-500 mb-6">{error}</p>
+          <button
+            onClick={fetchContacts}
+            className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium"
+          >
+            Try Again
+          </button>
+        </div>
+      ) : contacts.length > 0 ? (
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -259,7 +300,7 @@ const Contacts: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.05]">
-                {filteredContacts.map((contact) => (
+                {contacts.map((contact) => (
                   <tr 
                     key={contact.id} 
                     className="hover:bg-white/[0.02] transition-colors"
@@ -273,11 +314,11 @@ const Contacts: React.FC = () => {
                             <p className="text-sm font-medium text-white">{contact.name}</p>
                             <LeadScoreIndicator 
                               contact={{
-                                company: contact.company,
-                                position: contact.status, // Using status as position for demo
+                                company: contact.company || undefined,
+                                position: contact.position || contact.status, // Using status as position for demo
                                 email: contact.email,
                                 source: contact.source,
-                                lastContacted: contact.lastContacted
+                                lastContacted: contact.lastContacted || undefined
                               }}
                               size="sm"
                             />
@@ -287,7 +328,7 @@ const Contacts: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-300">{contact.company}</span>
+                      <span className="text-sm text-gray-300">{contact.company || 'No company'}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-400">{contact.source}</span>
@@ -295,12 +336,12 @@ const Contacts: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-3 w-3 text-gray-500" />
-                        <span className="text-sm text-gray-400">{contact.lastContacted}</span>
+                        <span className="text-sm text-gray-400">{formatLastContacted(contact.lastContacted)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getStatusColor(contact.status)}`}>
-                        {contact.status}
+                        {contact.status.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -314,10 +355,18 @@ const Contacts: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <ContactQuickActions
-                        contact={contact}
-                        onEdit={handleEditContact}
+                        contact={{
+                          id: parseInt(contact.id) || 0, // Convert string to number for compatibility
+                          name: contact.name,
+                          email: contact.email,
+                          company: contact.company || undefined
+                        }}
+                        onEdit={(contact: any) => handleEditContact({
+                          ...contact,
+                          id: contact.id.toString() // Convert back to string for our handler
+                        })}
                         onMessage={handleMessageContact}
-                        onDelete={handleDeleteContact}
+                        onDelete={(contactId: number) => handleDeleteContact(contactId.toString())}
                         isVisible={hoveredContactId === contact.id}
                       />
                     </td>

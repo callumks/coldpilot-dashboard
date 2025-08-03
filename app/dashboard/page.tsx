@@ -6,10 +6,53 @@ import DashboardLayout from '../../src/components/DashboardLayout';
 import StatCard from '../../src/components/StatCard';
 import { CheckCircle, AlertCircle, X } from 'lucide-react';
 
+interface DashboardStats {
+  openRate: {
+    value: string;
+    change: string;
+    trend: 'up' | 'down';
+    description: string;
+  };
+  meetingsBooked: {
+    value: string;
+    change: string;
+    trend: 'up' | 'down';
+    description: string;
+  };
+  replies: {
+    value: string;
+    change: string;
+    trend: 'up' | 'down';
+    description: string;
+  };
+}
+
+interface RecentConversation {
+  id: string;
+  sender: string;
+  company: string;
+  subject: string;
+  preview: string;
+  time: string;
+  isUnread: boolean;
+  status: string;
+}
+
+interface Campaign {
+  id: string;
+  name: string;
+  status: string;
+}
+
 const DashboardContent: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState('all');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentConversations, setRecentConversations] = useState<RecentConversation[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   // Handle Stripe checkout success
@@ -37,74 +80,41 @@ const DashboardContent: React.FC = () => {
     }
   }, [searchParams]);
 
-  const statData = [
-    {
-      title: 'Open Rate',
-      value: '24.5%',
-      change: '+2.1%',
-      trend: 'up' as const,
-      description: 'Percentage of recipients who opened your emails. Industry average is 22%.'
-    },
-    {
-      title: 'Meetings Booked',
-      value: '127',
-      change: '+12',
-      trend: 'up' as const,
-      description: 'Total number of meetings scheduled through your outreach campaigns this month.'
-    },
-    {
-      title: 'Replies',
-      value: '1,429',
-      change: '-3.2%',
-      trend: 'down' as const,
-      description: 'Total email replies received. A slight decrease is normal as campaigns mature.'
-    },
-  ];
+  // Fetch dashboard data
+  useEffect(() => {
+    fetchDashboardData();
+  }, [selectedCampaign]);
 
-  const threadData = [
-    {
-      id: 1,
-      sender: 'Sarah Johnson',
-      company: 'TechCorp',
-      subject: 'Re: Partnership Opportunity',
-      preview: 'Thanks for reaching out! I would love to discuss this further...',
-      time: '2 min ago',
-      isUnread: true,
-      status: 'replied' as const,
-    },
-    {
-      id: 2,
-      sender: 'Michael Chen',
-      company: 'StartupXYZ',
-      subject: 'Demo Request',
-      preview: 'Could we schedule a demo for next week? Our team is...',
-      time: '1 hour ago',
-      isUnread: true,
-      status: 'opened' as const,
-    },
-    {
-      id: 3,
-      sender: 'Emma Davis',
-      company: 'BigCorp Inc',
-      subject: 'Re: Cold Outreach',
-      preview: 'I appreciate your message, but we are not looking for...',
-      time: '3 hours ago',
-      isUnread: false,
-      status: 'no_response' as const,
-    },
-    {
-      id: 4,
-      sender: 'John Smith',
-      company: 'GrowthCo',
-      subject: 'Interested in Learning More',
-      preview: 'Your solution sounds exactly like what we need...',
-      time: '1 day ago',
-      isUnread: false,
-      status: 'replied' as const,
-    },
-  ];
-
-  const campaigns = ['All Campaigns', 'Q4 SaaS Outreach', 'Holiday Campaign', 'New Year Follow-up'];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params = new URLSearchParams();
+      if (selectedCampaign !== 'all') {
+        params.append('campaign', selectedCampaign);
+      }
+      
+      const response = await fetch(`/api/dashboard?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setStats(data.stats);
+        setRecentConversations(data.recentConversations);
+        setCampaigns(data.campaigns);
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -191,9 +201,10 @@ const DashboardContent: React.FC = () => {
             onChange={(e) => setSelectedCampaign(e.target.value)}
             className="px-4 py-2 bg-white/[0.02] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-sm"
           >
-            {campaigns.map((campaign, index) => (
-              <option key={index} value={campaign.toLowerCase().replace(/\s+/g, '_')} className="bg-[#1a1a1a]">
-                {campaign}
+            <option value="all" className="bg-[#1a1a1a]">All Campaigns</option>
+            {campaigns.map((campaign) => (
+              <option key={campaign.id} value={campaign.name.toLowerCase().replace(/\s+/g, '_')} className="bg-[#1a1a1a]">
+                {campaign.name}
               </option>
             ))}
           </select>
@@ -202,9 +213,34 @@ const DashboardContent: React.FC = () => {
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16 w-full">
-        {statData.map((stat, index) => (
-          <StatCard key={index} {...stat} />
-        ))}
+        {loading ? (
+          Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-xl p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-700 rounded w-1/2 mb-3"></div>
+                <div className="h-8 bg-gray-700 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-700 rounded w-1/3"></div>
+              </div>
+            </div>
+          ))
+        ) : error ? (
+          <div className="col-span-3 bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
+            <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+            <p className="text-red-400">{error}</p>
+            <button
+              onClick={fetchDashboardData}
+              className="mt-3 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm"
+            >
+              Retry
+            </button>
+          </div>
+        ) : stats ? (
+          <>
+            <StatCard {...stats.openRate} title="Open Rate" />
+            <StatCard {...stats.meetingsBooked} title="Meetings Booked" />
+            <StatCard {...stats.replies} title="Replies" />
+          </>
+        ) : null}
       </div>
 
       {/* Recent Threads Section */}
@@ -222,40 +258,60 @@ const DashboardContent: React.FC = () => {
         </div>
         
         <div className="space-y-3">
-          {threadData.map((thread) => (
-            <div 
-              key={thread.id}
-              className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:bg-white/[0.04] hover:border-white/[0.08] transition-all duration-200 cursor-pointer group"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl">
+                <div className="animate-pulse">
                   <div className="flex items-center gap-3 mb-3">
-                    <h4 className="text-white font-medium text-sm">
-                      {thread.sender}
-                    </h4>
-                    <span className="text-gray-600">·</span>
-                    <span className="text-sm text-gray-400">{thread.company}</span>
-                    {getStatusBadge(thread.status)}
-                    {thread.isUnread && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    )}
+                    <div className="h-4 bg-gray-700 rounded w-1/4"></div>
+                    <div className="h-3 bg-gray-700 rounded w-1/6"></div>
                   </div>
-                  
-                  <p className="text-sm font-medium text-gray-200 mb-2">
-                    {thread.subject}
-                  </p>
-                  
-                  <p className="text-sm text-gray-400 leading-relaxed">
-                    {thread.preview}
-                  </p>
-                </div>
-                
-                <div className="ml-6 flex-shrink-0">
-                  <span className="text-xs text-gray-500 font-medium">{thread.time}</span>
+                  <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-700 rounded w-full"></div>
                 </div>
               </div>
+            ))
+          ) : recentConversations.length > 0 ? (
+            recentConversations.map((conversation) => (
+              <div 
+                key={conversation.id}
+                className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:bg-white/[0.04] hover:border-white/[0.08] transition-all duration-200 cursor-pointer group"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-3">
+                      <h4 className="text-white font-medium text-sm">
+                        {conversation.sender}
+                      </h4>
+                      <span className="text-gray-600">·</span>
+                      <span className="text-sm text-gray-400">{conversation.company}</span>
+                      {getStatusBadge(conversation.status)}
+                      {conversation.isUnread && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      )}
+                    </div>
+                    
+                    <p className="text-sm font-medium text-gray-200 mb-2">
+                      {conversation.subject}
+                    </p>
+                    
+                    <p className="text-sm text-gray-400 leading-relaxed">
+                      {conversation.preview}
+                    </p>
+                  </div>
+                  
+                  <div className="ml-6 flex-shrink-0">
+                    <span className="text-xs text-gray-500 font-medium">{conversation.time}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-8 text-center">
+              <p className="text-gray-400 mb-2">No recent conversations</p>
+              <p className="text-sm text-gray-500">Start a campaign to begin engaging with prospects</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </DashboardLayout>

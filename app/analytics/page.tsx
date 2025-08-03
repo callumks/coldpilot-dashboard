@@ -1,13 +1,75 @@
 'use client';
 
-import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Award, Target, Users, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BarChart3, TrendingUp, Award, Target, Users, Calendar, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import StatCard from '../../src/components/StatCard';
+
+interface Metric {
+  title: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down';
+  description: string;
+}
+
+interface Benchmark {
+  metric: string;
+  yourValue: number;
+  industryAvg: number;
+  isAbove: boolean;
+}
+
+interface TopCampaign {
+  name: string;
+  openRate: number;
+  replyRate: number;
+  emailsSent: number;
+}
 
 const Analytics: React.FC = () => {
   const [chartView, setChartView] = useState<'bar' | 'line'>('bar');
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [benchmarks, setBenchmarks] = useState<Benchmark[]>([]);
+  const [topCampaign, setTopCampaign] = useState<TopCampaign | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [periodLabel, setPeriodLabel] = useState('Last 30 days');
+
+  // Fetch analytics data
+  useEffect(() => {
+    fetchAnalytics();
+  }, [selectedPeriod]);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params = new URLSearchParams({ period: selectedPeriod });
+      const response = await fetch(`/api/analytics?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setMetrics(data.metrics);
+        setBenchmarks(data.benchmarks);
+        setTopCampaign(data.topCampaign);
+        setPeriodLabel(data.periodLabel);
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch (err) {
+      console.error('Error fetching analytics:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load analytics');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const metrics = [
     { 

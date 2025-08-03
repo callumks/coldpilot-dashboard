@@ -1,98 +1,71 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Clock, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import ThreadPreview from '../../src/components/ThreadPreview';
 
-// Mock data moved outside component to avoid useMemo dependency warning
-const mockThreads = [
-    {
-      id: '1',
-      recipientName: 'Sarah Johnson',
-      recipientCompany: 'TechCorp Inc.',
-      lastMessage: 'Thanks for reaching out! I\'d be interested in learning more about your solution.',
-      timestamp: '2 hours ago',
-      status: 'replied' as const,
-      unreadCount: 1,
-      urgency: 'high' as const, // New field
-      responseTime: 24, // Hours to respond
-    },
-    {
-      id: '2',
-      recipientName: 'Michael Chen',
-      recipientCompany: 'StartupXYZ',
-      lastMessage: 'Hi there! I\'m currently evaluating solutions like yours. Could we schedule a quick call?',
-      timestamp: '5 hours ago',
-      status: 'replied' as const,
-      unreadCount: 1,
-      urgency: 'medium' as const,
-      responseTime: 48,
-    },
-    {
-      id: '3',
-      recipientName: 'Emily Rodriguez',
-      recipientCompany: 'Enterprise Solutions',
-      lastMessage: 'Your cold email about improving our sales process caught my attention...',
-      timestamp: '1 day ago',
-      status: 'replied' as const,
-      unreadCount: 0,
-      urgency: 'low' as const,
-      responseTime: 72,
-    },
-    {
-      id: '4',
-      recipientName: 'David Kim',
-      recipientCompany: 'Innovation Labs',
-      lastMessage: 'Thanks for the follow-up email. I\'ll discuss this with my team and get back to you.',
-      timestamp: '2 days ago',
-      status: 'sent' as const,
-      unreadCount: 0,
-      urgency: 'medium' as const,
-      responseTime: 24,
-    },
-    {
-      id: '5',
-      recipientName: 'Lisa Thompson',
-      recipientCompany: 'Growth Co.',
-      lastMessage: 'I saw your email about automating our outreach. Let\'s connect next week.',
-      timestamp: '3 days ago',
-      status: 'replied' as const,
-      unreadCount: 0,
-      urgency: 'low' as const,
-      responseTime: 96,
-    },
-  ];
+interface Conversation {
+  id: string;
+  recipientName: string;
+  recipientCompany: string;
+  recipientEmail: string;
+  lastMessage: string;
+  timestamp: string;
+  status: 'replied' | 'sent' | 'opened' | 'delivered';
+  unreadCount: number;
+  urgency: 'high' | 'medium' | 'low';
+  responseTime: number;
+  subject: string;
+  campaignName: string | null;
+  contactStatus: string;
+}
 
 const Conversations: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState('recent');
 
-  // Filter and search logic
-  const filteredThreads = useMemo(() => {
-    let filtered = mockThreads;
+  // Fetch conversations from API
+  useEffect(() => {
+    fetchConversations();
+  }, [searchQuery, activeFilter, sortBy]);
 
-    // Apply status filter
-    if (activeFilter === 'Unread') {
-      filtered = filtered.filter(thread => thread.unreadCount > 0);
-    } else if (activeFilter === 'Replied') {
-      filtered = filtered.filter(thread => thread.status === 'replied');
-    } else if (activeFilter === 'Pending') {
-      filtered = filtered.filter(thread => thread.status === 'sent');
+  const fetchConversations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (activeFilter !== 'All') params.append('filter', activeFilter);
+      if (sortBy) params.append('sortBy', sortBy);
+      
+      const response = await fetch(`/api/conversations?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch conversations');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setConversations(data.conversations);
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch (err) {
+      console.error('Error fetching conversations:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load conversations');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(thread =>
-        thread.recipientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        thread.recipientCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        thread.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    return filtered;
-  }, [searchQuery, activeFilter]);
+  // Conversations are now fetched and filtered via API
 
   const getUrgencyIndicator = (urgency: 'high' | 'medium' | 'low', responseTime: number) => {
     if (urgency === 'high') {
@@ -154,9 +127,9 @@ const Conversations: React.FC = () => {
               }`}
             >
               {filter}
-              {filter === 'Unread' && mockThreads.filter(t => t.unreadCount > 0).length > 0 && (
+              {filter === 'Unread' && conversations.filter(t => t.unreadCount > 0).length > 0 && (
                 <span className="ml-2 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full">
-                  {mockThreads.filter(t => t.unreadCount > 0).length}
+                  {conversations.filter(t => t.unreadCount > 0).length}
                 </span>
               )}
             </button>
@@ -165,7 +138,11 @@ const Conversations: React.FC = () => {
         
         <div className="flex-1"></div>
         
-        <select className="px-4 py-2 bg-white/[0.02] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-sm">
+        <select 
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="px-4 py-2 bg-white/[0.02] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-sm"
+        >
           <option value="recent" className="bg-[#1a1a1a]">Most Recent</option>
           <option value="oldest" className="bg-[#1a1a1a]">Oldest First</option>
           <option value="unread" className="bg-[#1a1a1a]">Unread First</option>
@@ -175,67 +152,102 @@ const Conversations: React.FC = () => {
 
       {/* Conversations List */}
       <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl overflow-hidden hover:bg-white/[0.03] transition-all duration-300">
-        <div className="divide-y divide-white/[0.05]">
-          {filteredThreads.map((thread) => (
-            <div 
-              key={thread.id}
-              onClick={() => setSelectedThreadId(thread.id)}
-              className={`transition-all duration-200 cursor-pointer ${
-                selectedThreadId === thread.id
-                  ? 'bg-blue-500/10 border-l-4 border-blue-500'
-                  : 'hover:bg-white/[0.02]'
-              }`}
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading conversations...</p>
+          </div>
+        ) : error ? (
+          <div className="p-12 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-red-400 mb-2">Error loading conversations</h3>
+            <p className="text-red-500 mb-6">{error}</p>
+            <button
+              onClick={fetchConversations}
+              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium"
             >
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <ThreadPreview 
-                      id={+thread.id}
-                      sender={thread.recipientName}
-                      company={thread.recipientCompany}
-                      subject={`Re: Cold Outreach - ${thread.recipientCompany}`}
-                      preview={thread.lastMessage}
-                      time={thread.timestamp}
-                      isUnread={thread.unreadCount > 0}
-                    />
+              Try Again
+            </button>
+          </div>
+        ) : conversations.length > 0 ? (
+          <div className="divide-y divide-white/[0.05]">
+            {conversations.map((conversation) => (
+              <div 
+                key={conversation.id}
+                onClick={() => setSelectedThreadId(conversation.id)}
+                className={`transition-all duration-200 cursor-pointer ${
+                  selectedThreadId === conversation.id
+                    ? 'bg-blue-500/10 border-l-4 border-blue-500'
+                    : 'hover:bg-white/[0.02]'
+                }`}
+              >
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <ThreadPreview 
+                        id={parseInt(conversation.id.substring(0, 8), 16)} // Convert string ID to number for compatibility
+                        sender={conversation.recipientName}
+                        company={conversation.recipientCompany}
+                        subject={conversation.subject}
+                        preview={conversation.lastMessage}
+                        time={conversation.timestamp}
+                        isUnread={conversation.unreadCount > 0}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Campaign and Contact Status */}
+                  <div className="flex items-center gap-2 mb-3">
+                    {conversation.campaignName && (
+                      <div className="px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md">
+                        <span className="text-xs text-purple-400 font-medium">📧 {conversation.campaignName}</span>
+                      </div>
+                    )}
+                    <div className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded-md">
+                      <span className="text-xs text-blue-400 font-medium">{conversation.contactStatus.replace('_', ' ')}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Urgency and Response Time Indicators */}
+                  <div className="flex items-center gap-2 mt-3">
+                    {getUrgencyIndicator(conversation.urgency, conversation.responseTime)}
+                    {conversation.status === 'replied' && (
+                      <div className="px-2 py-1 bg-green-500/10 border border-green-500/20 rounded-md">
+                        <span className="text-xs text-green-400 font-medium">✓ Replied</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
-                {/* Urgency and Response Time Indicators */}
-                <div className="flex items-center gap-2 mt-3">
-                  {getUrgencyIndicator(thread.urgency, thread.responseTime)}
-                  {thread.status === 'replied' && (
-                    <div className="px-2 py-1 bg-green-500/10 border border-green-500/20 rounded-md">
-                      <span className="text-xs text-green-400 font-medium">✓ Replied</span>
-                    </div>
-                  )}
-                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-12 text-center">
+            <h3 className="text-xl font-medium text-white mb-4">No conversations yet</h3>
+            <p className="text-gray-400 mb-6">Start a campaign to begin engaging with prospects</p>
+            <button
+              onClick={() => window.location.href = '/campaigns'}
+              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium"
+            >
+              Create Campaign
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Enhanced Empty State */}
-      {filteredThreads.length === 0 && (
+      {!loading && !error && conversations.length === 0 && searchQuery && (
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl p-8 text-center">
-          <h3 className="text-xl font-medium text-white mb-4">
-            {searchQuery ? 'No conversations found' : 'No conversations yet'}
-          </h3>
-          <p className="text-gray-400">
-            {searchQuery 
-              ? `No results found for "${searchQuery}". Try a different search term.`
-              : 'Start a new campaign to begin engaging with prospects'
-            }
+          <h3 className="text-xl font-medium text-white mb-4">No conversations found</h3>
+          <p className="text-gray-400 mb-6">
+            No results found for "{searchQuery}". Try a different search term.
           </p>
-          {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery('')}
-              className="mt-4 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all"
-            >
-              Clear search
-            </button>
-          )}
+          <button 
+            onClick={() => setSearchQuery('')}
+            className="px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all"
+          >
+            Clear search
+          </button>
         </div>
       )}
     </DashboardLayout>
