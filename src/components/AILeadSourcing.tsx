@@ -229,7 +229,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
                       : formData.sources.filter(s => s !== 'apollo');
                     handleInputChange('sources', newSources);
                   }}
-                  className="rounded border-gray-600 bg-white/[0.02] text-purple-500 focus:ring-purple-500"
+                  className="rounded border-gray-600 bg-white/[0.02] text-blue-500 focus:ring-blue-500"
                 />
                 <span className="text-gray-300">Apollo.io</span>
               </label>
@@ -243,7 +243,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
                       : formData.sources.filter(s => s !== 'linkedin');
                     handleInputChange('sources', newSources);
                   }}
-                  className="rounded border-gray-600 bg-white/[0.02] text-purple-500 focus:ring-purple-500"
+                  className="rounded border-gray-600 bg-white/[0.02] text-blue-500 focus:ring-blue-500"
                 />
                 <span className="text-gray-300">LinkedIn Sales Navigator</span>
               </label>
