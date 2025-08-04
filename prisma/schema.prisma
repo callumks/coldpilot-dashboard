@@ -341,6 +341,7 @@ enum ContactSource {
   REFERRAL
   EVENT
   WEBSITE
+  APOLLO
 }
 
 enum ContactStatus {

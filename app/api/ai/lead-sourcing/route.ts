@@ -140,9 +140,8 @@ async function sourceFromApollo(params: {
   console.log('🚀 Sourcing from Apollo API...', params);
   
   try {
-    // Build Apollo API search query based on parameters
+    // Build Apollo API search query based on parameters (NO API KEY IN BODY!)
     const searchQuery = {
-      api_key: process.env.APOLLO_API_KEY,
       page: 1,
       per_page: Math.min(params.limit, 100), // Apollo max 100 per page
       person_titles: params.jobTitles,
@@ -159,7 +158,8 @@ async function sourceFromApollo(params: {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache',
+        'X-Api-Key': process.env.APOLLO_API_KEY!
       },
       body: JSON.stringify(searchQuery)
     });
@@ -179,7 +179,7 @@ async function sourceFromApollo(params: {
       company: person.organization?.name || 'Unknown Company',
       position: person.title || 'Unknown Position',
       linkedinUrl: person.linkedin_url || null,
-      source: "apollo",
+      source: "APOLLO",
       apolloId: person.id,
       city: person.city,
       state: person.state,
@@ -200,7 +200,7 @@ async function sourceFromApollo(params: {
         company: "TechStart Solutions",
         position: params.jobTitles[0] || "CEO",
         linkedinUrl: "https://linkedin.com/in/sarahjohnson-ceo",
-        source: "apollo",
+        source: "APOLLO",
         apolloId: "fallback_001",
         city: params.location?.split(',')[0] || "San Francisco",
         state: "CA",
@@ -212,7 +212,7 @@ async function sourceFromApollo(params: {
         company: "InnovateTech Corp", 
         position: params.jobTitles[0] || "CTO",
         linkedinUrl: "https://linkedin.com/in/michaelchen-cto",
-        source: "apollo",
+        source: "APOLLO",
         apolloId: "fallback_002",
         city: params.location?.split(',')[0] || "Austin", 
         state: "TX",
@@ -297,7 +297,15 @@ Respond with JSON array matching this format:
 
     if (response.ok) {
       const data = await response.json();
-      const aiAnalysis = JSON.parse(data.choices[0]?.message?.content || '[]');
+      const rawContent = data.choices[0]?.message?.content || '[]';
+      
+      // Strip markdown formatting (```json ... ```) that GPT sometimes adds
+      const cleanedContent = rawContent
+        .replace(/```json\s*/g, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      
+      const aiAnalysis = JSON.parse(cleanedContent);
       
       // Apply AI insights to leads
       const enrichedLeads = leads.map((lead, index) => {
