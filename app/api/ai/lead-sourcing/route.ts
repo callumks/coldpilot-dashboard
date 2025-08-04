@@ -146,6 +146,9 @@ async function sourceFromApollo(params: {
       per_page: Math.min(params.limit, 100), // Apollo max 100 per page
       person_titles: params.jobTitles,
       q_keywords: params.industry,
+      // CRITICAL: Request emails and phone numbers
+      reveal_personal_emails: true,
+      reveal_phone_number: true,
       // Add location filter if provided
       ...(params.location && { person_locations: [params.location] }),
       // Add company size filter if provided
