@@ -323,7 +323,8 @@ Respond with JSON array matching this format:
         
         console.log('✅ AI enrichment successful:', aiAnalysis.length, 'insights');
       } catch (jsonError) {
-        console.log('❌ AI enrichment JSON parse failed:', jsonError.message);
+        const errorMessage = jsonError instanceof Error ? jsonError.message : String(jsonError);
+        console.log('❌ AI enrichment JSON parse failed:', errorMessage);
         console.log('🔧 Raw content sample:', rawContent.substring(0, 200) + '...');
         // Create fallback array matching lead count
         aiAnalysis = leads.map(() => ({}));
