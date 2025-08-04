@@ -299,13 +299,35 @@ Respond with JSON array matching this format:
       const data = await response.json();
       const rawContent = data.choices[0]?.message?.content || '[]';
       
-      // Strip markdown formatting (```json ... ```) that GPT sometimes adds
-      const cleanedContent = rawContent
-        .replace(/```json\s*/g, '')
-        .replace(/```\s*/g, '')
-        .trim();
-      
-      const aiAnalysis = JSON.parse(cleanedContent);
+      let aiAnalysis = [];
+      try {
+        // Strip markdown formatting (```json ... ```) that GPT sometimes adds
+        let cleanedContent = rawContent
+          .replace(/```json\s*/g, '')
+          .replace(/```\s*/g, '')
+          .trim();
+        
+        // Additional cleaning for malformed JSON
+        // Remove any trailing commas before closing brackets
+        cleanedContent = cleanedContent.replace(/,(\s*[}\]])/g, '$1');
+        // Ensure the content starts and ends with array brackets
+        if (!cleanedContent.startsWith('[')) cleanedContent = '[' + cleanedContent;
+        if (!cleanedContent.endsWith(']')) cleanedContent = cleanedContent + ']';
+        
+        aiAnalysis = JSON.parse(cleanedContent);
+        
+        // Validate it's an array
+        if (!Array.isArray(aiAnalysis)) {
+          throw new Error('AI response is not an array');
+        }
+        
+        console.log('✅ AI enrichment successful:', aiAnalysis.length, 'insights');
+      } catch (jsonError) {
+        console.log('❌ AI enrichment JSON parse failed:', jsonError.message);
+        console.log('🔧 Raw content sample:', rawContent.substring(0, 200) + '...');
+        // Create fallback array matching lead count
+        aiAnalysis = leads.map(() => ({}));
+      }
       
       // Apply AI insights to leads
       const enrichedLeads = leads.map((lead, index) => {
