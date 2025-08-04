@@ -364,6 +364,8 @@ async function saveParsedLeads(leads: any[], userId: string) {
   console.log('💾 Saving leads to database...', { count: leads.length });
 
   const savedLeads = [];
+  let duplicateCount = 0;
+  let errorCount = 0;
   
   for (const lead of leads) {
     try {
@@ -375,27 +377,53 @@ async function saveParsedLeads(leads: any[], userId: string) {
         }
       });
 
-      if (!existing) {
-        const savedLead = await prisma.contact.create({
-          data: {
-            userId,
-            name: lead.name,
-            email: lead.email,
-            company: lead.company,
-            position: lead.position,
-            linkedinUrl: lead.linkedinUrl,
-            source: lead.source.toUpperCase() as any,
-            status: 'COLD',
-            tags: lead.tags || [],
-            notes: lead.aiInsights || null
-          }
-        });
-        savedLeads.push(savedLead);
+      if (existing) {
+        duplicateCount++;
+        console.log('🔄 Duplicate contact found:', lead.email);
+        continue;
       }
+
+      // Validate lead data before saving
+      if (!lead.name || !lead.email || !lead.source) {
+        console.error('❌ Invalid lead data:', { name: lead.name, email: lead.email, source: lead.source });
+        errorCount++;
+        continue;
+      }
+
+      const savedLead = await prisma.contact.create({
+        data: {
+          userId,
+          name: lead.name,
+          email: lead.email,
+          company: lead.company || 'Unknown Company',
+          position: lead.position || 'Unknown Position',
+          linkedinUrl: lead.linkedinUrl,
+          source: lead.source.toUpperCase() as any,
+          status: 'COLD',
+          tags: lead.tags || [],
+          notes: lead.aiInsights || null
+        }
+      });
+      savedLeads.push(savedLead);
+      console.log('✅ Saved lead:', lead.name, '-', lead.email);
+      
     } catch (error) {
-      console.error('Error saving lead:', error);
+      errorCount++;
+      console.error('❌ Error saving lead:', {
+        name: lead.name,
+        email: lead.email,
+        source: lead.source,
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   }
+
+  console.log('📊 Save summary:', {
+    total: leads.length,
+    saved: savedLeads.length,
+    duplicates: duplicateCount,
+    errors: errorCount
+  });
 
   return savedLeads;
 }
