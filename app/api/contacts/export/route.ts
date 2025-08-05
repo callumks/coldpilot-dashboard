@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       'Company',
       'Position',
       'Phone',
-      'LinkedIn',
+      'Profile URL',
       'Source',
       'Status',
       'Tags',
@@ -63,7 +63,13 @@ export async function GET(request: NextRequest) {
       contact.position || '',
       contact.phoneNumber || '',
       contact.linkedinUrl || '',
-      contact.source || '',
+      contact.source === 'APOLLO' ? 'AI-Sourced' : 
+      contact.source === 'LINKEDIN' ? 'AI-Sourced' : 
+      contact.source === 'MANUAL' ? 'Manual' : 
+      contact.source === 'EMAIL' ? 'Email' :
+      contact.source === 'REFERRAL' ? 'Referral' :
+      contact.source === 'EVENT' ? 'Event' :
+      contact.source === 'WEBSITE' ? 'Website' : 'Other',
       contact.status || '',
       Array.isArray(contact.tags) ? contact.tags.join('; ') : '',
       contact.notes || '',

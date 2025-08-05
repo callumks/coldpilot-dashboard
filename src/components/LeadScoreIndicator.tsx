@@ -84,9 +84,9 @@ const LeadScoreIndicator: React.FC<LeadScoreIndicatorProps> = ({ contact, size =
       }
     }
     
-    // Source scoring
-    if (contact.source === 'LINKEDIN') {
-      score += 2; // LinkedIn typically higher quality
+    // Source scoring - premium data sources get bonus points
+    if (contact.source === 'LINKEDIN' || contact.source === 'APOLLO') {
+      score += 2; // Premium data sources typically higher quality
     } else if (contact.source === 'MANUAL') {
       score += 1; // Manually added = more intentional
     }
@@ -186,8 +186,8 @@ const LeadScoreIndicator: React.FC<LeadScoreIndicatorProps> = ({ contact, size =
       factors.push('✅ Business email (+1 pt)');
     }
     
-    if (contact.source === 'LINKEDIN') {
-      factors.push('✅ LinkedIn source (+2 pts)');
+    if (contact.source === 'LINKEDIN' || contact.source === 'APOLLO') {
+      factors.push('✅ Premium data source (+2 pts)');
     }
 
     return `${config.description}\n\nScoring factors:\n${factors.join('\n') || 'Basic scoring applied'}`;

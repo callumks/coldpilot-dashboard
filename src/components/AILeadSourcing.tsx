@@ -213,40 +213,24 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
             <p className="text-xs text-gray-500 mt-1">Maximum 500 leads per search</p>
           </div>
 
-          {/* Data Sources */}
+          {/* AI-Powered Discovery */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Data Sources
+              AI-Powered Lead Discovery
             </label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.sources.includes('apollo')}
-                  onChange={(e) => {
-                    const newSources = e.target.checked 
-                      ? [...formData.sources, 'apollo']
-                      : formData.sources.filter(s => s !== 'apollo');
-                    handleInputChange('sources', newSources);
-                  }}
-                  className="rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500"
-                />
-                <span className="text-gray-300">Apollo.io</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.sources.includes('linkedin')}
-                  onChange={(e) => {
-                    const newSources = e.target.checked 
-                      ? [...formData.sources, 'linkedin']
-                      : formData.sources.filter(s => s !== 'linkedin');
-                    handleInputChange('sources', newSources);
-                  }}
-                  className="rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500"
-                />
-                <span className="text-gray-300">LinkedIn Sales Navigator</span>
-              </label>
+            <div className="space-y-2 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-gray-300 text-sm">Multi-platform prospecting enabled</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-gray-300 text-sm">Real-time email verification</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span className="text-gray-300 text-sm">Advanced contact enrichment</span>
+              </div>
             </div>
           </div>
         </div>
@@ -267,10 +251,10 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
               <span className="text-green-400 font-medium">Leads Successfully Sourced!</span>
             </div>
             <div className="text-sm text-gray-300 space-y-1">
-              <p>• {results.leadsFound} leads found</p>
-              <p>• {results.leadsSaved} new leads added to your contacts</p>
-              <p>• Sources: Apollo ({results.sources.apollo}), LinkedIn ({results.sources.linkedin})</p>
-              <p>• All leads AI-scored for relevance</p>
+              <p>• {results.leadsFound} high-quality leads discovered</p>
+              <p>• {results.leadsSaved} new prospects added to your pipeline</p>
+              <p>• All contacts verified and AI-scored for relevance</p>
+              <p>• Real-time email validation completed</p>
             </div>
           </div>
         )}

@@ -211,21 +211,30 @@ const Contacts: React.FC = () => {
       <div className="mb-8">
         <h3 className="text-lg font-medium text-white mb-4">Leads by Source</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {leadSources.map((source, index) => (
-            <div key={index} className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-400">{source.source}</span>
-                <span className="text-xs text-gray-500">{source.percentage}%</span>
+          {leadSources.map((source, index) => {
+            const displayName = source.source === 'APOLLO' ? 'AI-Sourced' : 
+                               source.source === 'LINKEDIN' ? 'AI-Sourced' : 
+                               source.source === 'MANUAL' ? 'Manual' : 
+                               source.source === 'EMAIL' ? 'Email' :
+                               source.source === 'REFERRAL' ? 'Referral' :
+                               source.source === 'EVENT' ? 'Event' :
+                               source.source === 'WEBSITE' ? 'Website' : 'Other';
+            return (
+              <div key={index} className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-400">{displayName}</span>
+                  <span className="text-xs text-gray-500">{source.percentage}%</span>
+                </div>
+                <p className="text-2xl font-semibold text-white">{source.count}</p>
+                <div className="mt-3 w-full bg-gray-800 rounded-full h-1">
+                  <div 
+                    className="bg-blue-500 h-1 rounded-full"
+                    style={{ width: `${source.percentage}%` }}
+                  ></div>
+                </div>
               </div>
-              <p className="text-2xl font-semibold text-white">{source.count}</p>
-              <div className="mt-3 w-full bg-gray-800 rounded-full h-1">
-                <div 
-                  className="bg-blue-500 h-1 rounded-full"
-                  style={{ width: `${source.percentage}%` }}
-                ></div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -335,7 +344,15 @@ const Contacts: React.FC = () => {
                       <span className="text-sm text-gray-300">{contact.company || 'No company'}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-400">{contact.source}</span>
+                      <span className="text-sm text-gray-400">
+                        {contact.source === 'APOLLO' ? 'AI-Sourced' : 
+                         contact.source === 'LINKEDIN' ? 'AI-Sourced' : 
+                         contact.source === 'MANUAL' ? 'Manual' : 
+                         contact.source === 'EMAIL' ? 'Email' :
+                         contact.source === 'REFERRAL' ? 'Referral' :
+                         contact.source === 'EVENT' ? 'Event' :
+                         contact.source === 'WEBSITE' ? 'Website' : 'Other'}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
