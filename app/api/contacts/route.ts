@@ -99,11 +99,39 @@ export async function GET(request: NextRequest) {
 
     // Calculate total for percentages
     const totalContacts = contacts.length;
-    const leadSources = leadSourceStats.map(stat => ({
-      source: stat.source,
-      count: stat._count.source,
-      percentage: totalContacts > 0 ? Math.round((stat._count.source / totalContacts) * 100) : 0
-    }));
+    
+    // Combine Apollo and LinkedIn into "coldpilot sourced"
+    const sourceMap = new Map();
+    let coldpilotCount = 0;
+    
+    leadSourceStats.forEach(stat => {
+      if (stat.source === 'APOLLO' || stat.source === 'LINKEDIN') {
+        coldpilotCount += stat._count.source;
+      } else {
+        sourceMap.set(stat.source, stat._count.source);
+      }
+    });
+    
+    // Build final leadSources array
+    const leadSources = [];
+    
+    // Add coldpilot sourced if we have any
+    if (coldpilotCount > 0) {
+      leadSources.push({
+        source: 'coldpilot sourced',
+        count: coldpilotCount,
+        percentage: totalContacts > 0 ? Math.round((coldpilotCount / totalContacts) * 100) : 0
+      });
+    }
+    
+    // Add other sources
+    sourceMap.forEach((count, source) => {
+      leadSources.push({
+        source: source,
+        count: count,
+        percentage: totalContacts > 0 ? Math.round((count / totalContacts) * 100) : 0
+      });
+    });
 
     console.log('✅ Contacts fetched:', contacts.length);
 

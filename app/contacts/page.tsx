@@ -212,8 +212,7 @@ const Contacts: React.FC = () => {
         <h3 className="text-lg font-medium text-white mb-4">Leads by Source</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {leadSources.map((source, index) => {
-            const displayName = source.source === 'APOLLO' ? 'AI-Sourced' : 
-                               source.source === 'LINKEDIN' ? 'AI-Sourced' : 
+            const displayName = source.source === 'coldpilot sourced' ? 'coldpilot sourced' : 
                                source.source === 'MANUAL' ? 'Manual' : 
                                source.source === 'EMAIL' ? 'Email' :
                                source.source === 'REFERRAL' ? 'Referral' :
