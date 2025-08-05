@@ -1,6 +1,10 @@
 # Coldpilot Dashboard
 
-A modern, dark-themed React dashboard for managing cold outreach campaigns. Built with React, TypeScript, and TailwindCSS, inspired by Framer's Cadence template aesthetic.
+**Private Repository - Not for Public Use**
+
+The official dashboard application for Coldpilot - an AI-powered cold outreach platform. This repository contains proprietary code and is not intended for public use, distribution, or contribution.
+
+Built with Next.js, TypeScript, TailwindCSS, and Prisma.
 
 ## Features
 
@@ -29,36 +33,45 @@ src/
     └── ThreadPreview.tsx  # Message/thread preview cards
 ```
 
-## Getting Started
+## Development Setup
+
+**For Authorized Developers Only**
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- npm or yarn
+- Node.js (v18 or higher)
+- npm
+- PostgreSQL database access
+- Required environment variables
 
-### Installation
+### Local Development
 
-1. Clone or download this repository
-2. Install dependencies:
-
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-3. Start the development server:
+2. Set up environment variables (see `.env.example`)
 
+3. Run database migrations:
    ```bash
-   npm start
+   npx prisma migrate dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) to view the dashboard
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000)
 
 ## Available Scripts
 
-- `npm start` - Start development server
-- `npm build` - Create production build
-- `npm test` - Run tests
-- `npm eject` - Eject from Create React App (one-way operation)
+- `npm run dev` - Start development server
+- `npm run build` - Create production build  
+- `npm run start` - Start production server
+- `npx prisma studio` - Open database admin interface
+- `npx prisma migrate dev` - Run database migrations
 
 ## Design System
 
@@ -100,16 +113,31 @@ All components use Tailwind utility classes for consistent styling. To modify th
 
 ## Technology Stack
 
-- **React 18** - UI library
+- **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety
 - **TailwindCSS** - Utility-first CSS framework
-- **Heroicons** - Beautiful SVG icons
-- **Create React App** - Development tooling
+- **Prisma** - Database ORM
+- **PostgreSQL** - Primary database
+- **Clerk** - Authentication
+- **Stripe** - Payment processing
+- **OpenAI** - AI features
 
-## Contributing
+## Deployment
 
-This is a starter template. Customize and extend as needed for your specific use case.
+- **Railway** - Primary hosting platform
+- **Vercel** - Alternative deployment option
+- **GitHub Actions** - CI/CD pipeline
 
-## License
+## Security & Access
 
-MIT License - feel free to use this template for your projects.
+This repository contains:
+- Proprietary business logic
+- API integrations and keys
+- Customer data schemas
+- Billing and payment flows
+
+**Access is restricted to authorized team members only.**
+
+## Support
+
+For development questions or access requests, contact the development team.
