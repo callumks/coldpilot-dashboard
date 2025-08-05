@@ -12,10 +12,39 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     console.log('📝 Waitlist signup request received');
+    console.log('🔍 Request headers:', Object.fromEntries(request.headers.entries()));
 
-    // Parse request body
-    const body = await request.json();
-    const { name, email } = body;
+    // Parse request body - handle both JSON and form data
+    const contentType = request.headers.get('content-type') || '';
+    let body: any = {};
+    let name: string | undefined;
+    let email: string | undefined;
+
+    if (contentType.includes('application/json')) {
+      body = await request.json();
+      console.log('🔍 JSON body received:', body);
+      ({ name, email } = body);
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      const formData = await request.text();
+      console.log('🔍 Form data received:', formData);
+      const urlParams = new URLSearchParams(formData);
+      name = urlParams.get('name') || undefined;
+      email = urlParams.get('email') || undefined;
+      body = { name, email };
+    } else {
+      // Try JSON as fallback
+      try {
+        body = await request.json();
+        console.log('🔍 Fallback JSON body received:', body);
+        ({ name, email } = body);
+      } catch (e) {
+        console.log('❌ Unable to parse request body');
+        return NextResponse.json(
+          { error: 'Invalid request format' }, 
+          { status: 400 }
+        );
+      }
+    }
 
     // Validate required fields
     if (!email) {
