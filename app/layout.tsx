@@ -6,6 +6,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Coldpilot Dashboard",
   description: "Manage your cold outreach campaigns with AI-powered automation",
+  icons: {
+    icon: '/coldpilot-favicon.png',
+    shortcut: '/coldpilot-favicon.png',
+    apple: '/coldpilot-favicon.png',
+  },
 };
 
 export default function RootLayout({
