@@ -129,7 +129,20 @@ async function sourceLeadsWithAI(params: {
   };
 }
 
-// Apollo API Integration
+// Helper functions for Apollo API
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
+  }
+  return out;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Apollo API Integration - FIXED VERSION with proper two-step process
 async function sourceFromApollo(params: {
   industry: string;
   companySize?: string;
@@ -138,68 +151,119 @@ async function sourceFromApollo(params: {
   limit: number;
 }) {
   console.log('🚀 Sourcing from Apollo API...', params);
-  
+
+  const APOLLO_API_KEY = process.env.APOLLO_API_KEY!;
+  const SEARCH_URL = "https://api.apollo.io/api/v1/mixed_people/search";
+  const ENRICH_URL = "https://api.apollo.io/api/v1/people/bulk_match";
+
   try {
-    // Build Apollo API search query based on parameters (NO API KEY IN BODY!)
-    const searchQuery = {
+    // STEP 1: SEARCH FOR PEOPLE (no email revelation on search endpoint)
+    const searchBody = {
       page: 1,
-      per_page: Math.min(params.limit, 100), // Apollo max 100 per page
+      per_page: Math.min(params.limit, 100),
       person_titles: params.jobTitles,
       q_keywords: params.industry,
-      // CRITICAL: Request emails and phone numbers
-      reveal_personal_emails: true,
-      reveal_phone_number: true,
-      // Add location filter if provided
+      // Remove reveal_* parameters - they don't work on search endpoint
       ...(params.location && { person_locations: [params.location] }),
-      // Add company size filter if provided
-      ...(params.companySize && { 
-        organization_num_employees_ranges: [params.companySize]
-      })
+      ...(params.companySize && {
+        organization_num_employees_ranges: [params.companySize],
+      }),
     };
 
-    const response = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
-      method: 'POST',
+    const searchResponse = await fetch(SEARCH_URL, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'X-Api-Key': process.env.APOLLO_API_KEY!
+        "Content-Type": "application/json",
+        "X-Api-Key": APOLLO_API_KEY,
       },
-      body: JSON.stringify(searchQuery)
+      body: JSON.stringify(searchBody),
     });
 
-    if (!response.ok) {
-      console.error('Apollo API error:', response.status, response.statusText);
-      throw new Error(`Apollo API error: ${response.status}`);
+    if (!searchResponse.ok) {
+      throw new Error(`Apollo Search failed: ${searchResponse.status} ${searchResponse.statusText}`);
     }
 
-    const data = await response.json();
-    console.log(`✅ Apollo returned ${data.people?.length || 0} prospects`);
+    const searchData = await searchResponse.json();
+    const people: any[] = searchData.people || [];
 
-    // Transform Apollo data to our format
-    const apolloLeads = (data.people || []).map((person: any) => ({
-      name: `${person.first_name || ''} ${person.last_name || ''}`.trim(),
-      email: person.email || `${person.first_name?.toLowerCase()}.${person.last_name?.toLowerCase()}@${person.organization?.name?.toLowerCase().replace(/\s+/g, '')}.com`,
-      company: person.organization?.name || 'Unknown Company',
-      position: person.title || 'Unknown Position',
-      linkedinUrl: person.linkedin_url || null,
-      source: "APOLLO",
-      apolloId: person.id,
-      city: person.city,
-      state: person.state,
-      country: person.country
-    }));
+    console.log(`🔍 Found ${people.length} leads from search`);
 
+    // STEP 2: BATCH ENRICH FOR EMAILS (max 10 per request)
+    const batches = chunkArray(people.slice(0, params.limit), 10);
+    const enrichedResults: Record<string, any> = {};
+
+    for (const batch of batches) {
+      const enrichmentPeople = batch.map((p) => ({
+        first_name: p.first_name,
+        last_name: p.last_name,
+        organization_name: p.organization?.name,
+        email: p.email, // Optional – if already present
+      }));
+
+      try {
+        const enrichRes = await fetch(ENRICH_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Api-Key": APOLLO_API_KEY,
+          },
+          body: JSON.stringify({
+            reveal_personal_emails: true,
+            reveal_phone_number: false, // Skip phone unless needed
+            people: enrichmentPeople,
+          }),
+        });
+
+        if (!enrichRes.ok) {
+          console.warn(`⚠️ Enrichment failed for batch: ${enrichRes.status} ${enrichRes.statusText}`);
+          continue;
+        }
+
+        const enrichData = await enrichRes.json();
+        for (const enriched of enrichData.people || []) {
+          if (enriched.id) {
+            enrichedResults[enriched.id] = enriched;
+          }
+        }
+      } catch (enrichErr) {
+        console.warn("❌ Enrichment error:", enrichErr);
+      }
+
+      // Add delay between batches to avoid rate limits
+      await delay(300);
+    }
+
+    // STEP 3: COMBINE SEARCH + ENRICHMENT DATA
+    const apolloLeads = people.slice(0, params.limit).map((person) => {
+      const enriched = enrichedResults[person.id] || {};
+      const email = enriched.email || null; // Only use real emails from enrichment
+
+      return {
+        name: `${person.first_name || ""} ${person.last_name || ""}`.trim(),
+        email, // Will be null if not revealed by Apollo
+        company: person.organization?.name || "Unknown Company",
+        position: person.title || "Unknown Position",
+        linkedinUrl: person.linkedin_url || null,
+        source: "APOLLO",
+        apolloId: person.id,
+        city: person.city,
+        state: person.state,
+        country: person.country,
+      };
+    });
+
+    console.log(`✅ Apollo returned ${apolloLeads.length} prospects, ${apolloLeads.filter(l => l.email).length} with emails`);
     return apolloLeads;
 
   } catch (error) {
-    console.error('Apollo API integration failed:', error);
+    console.error('🔥 Apollo sourcing failed:', error);
     
-    // Fallback to enhanced mock data
+    // Fallback to enhanced mock data (with realistic email handling)
     console.log('🔄 Using Apollo fallback data...');
     return [
       {
         name: "Sarah Johnson",
-        email: "sarah.johnson@techstart.com", 
+        email: null, // Realistic - no fake emails 
         company: "TechStart Solutions",
         position: params.jobTitles[0] || "CEO",
         linkedinUrl: "https://linkedin.com/in/sarahjohnson-ceo",
@@ -211,7 +275,7 @@ async function sourceFromApollo(params: {
       },
       {
         name: "Michael Chen",
-        email: "michael.chen@innovatetech.com",
+        email: null, // Realistic - no fake emails
         company: "InnovateTech Corp", 
         position: params.jobTitles[0] || "CTO",
         linkedinUrl: "https://linkedin.com/in/michaelchen-cto",
