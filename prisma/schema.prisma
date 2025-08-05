@@ -438,3 +438,14 @@ model RejectedLead {
 
   @@map("rejected_leads")
 }
+
+// Waitlist Signup model - for capturing pre-launch signups
+model WaitlistSignup {
+  id        Int      @id @default(autoincrement())
+  name      String?  // optional
+  email     String   @unique
+  source    String   @default("framer")
+  createdAt DateTime @default(now())
+
+  @@map("waitlist_signups")
+}
