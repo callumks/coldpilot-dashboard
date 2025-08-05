@@ -154,7 +154,7 @@ async function sourceFromApollo(params: {
 
   const APOLLO_API_KEY = process.env.APOLLO_API_KEY!;
   const SEARCH_URL = "https://api.apollo.io/api/v1/mixed_people/search";
-  const ENRICH_URL = "https://api.apollo.io/api/v1/people/bulk_match";
+  const ENRICH_URL = "https://api.apollo.io/api/v1/people/match";
 
   try {
     // STEP 1: SEARCH FOR PEOPLE (with email filters for verified emails only)
@@ -190,55 +190,64 @@ async function sourceFromApollo(params: {
 
     console.log(`🔍 Found ${people.length} leads from search`);
 
-    // STEP 2: BATCH ENRICH FOR EMAILS (max 10 per request)
-    const batches = chunkArray(people.slice(0, params.limit), 10);
+    // STEP 2: INDIVIDUAL ENRICH FOR EMAILS (single person endpoint)
     const enrichedResults: Record<string, any> = {};
+    let enrichmentSuccess = 0;
+    let enrichmentErrors = 0;
 
-    for (const batch of batches) {
-      const enrichmentPeople = batch.map((p) => ({
-        first_name: p.first_name,
-        last_name: p.last_name,
-        organization_name: p.organization?.name,
-        email: p.email, // Optional – if already present
-      }));
-
+    for (const person of people.slice(0, params.limit)) {
       try {
+        console.log(`📤 Enriching person: ${person.first_name} ${person.last_name}...`);
+
+        const enrichPayload = {
+          first_name: person.first_name,
+          last_name: person.last_name,
+          organization_name: person.organization?.name,
+          reveal_personal_emails: true,
+          reveal_phone_number: false,
+        };
+
         const enrichRes = await fetch(ENRICH_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-Api-Key": APOLLO_API_KEY,
           },
-          body: JSON.stringify({
-            reveal_personal_emails: true,
-            reveal_phone_number: false, // Skip phone unless needed
-            people: enrichmentPeople,
-          }),
+          body: JSON.stringify(enrichPayload),
         });
 
         if (!enrichRes.ok) {
-          console.warn(`⚠️ Enrichment failed for batch: ${enrichRes.status} ${enrichRes.statusText}`);
+          const errorText = await enrichRes.text();
+          console.warn(`⚠️ Enrichment failed for ${person.first_name} ${person.last_name}: ${enrichRes.status} ${enrichRes.statusText} - ${errorText}`);
+          enrichmentErrors++;
           continue;
         }
 
         const enrichData = await enrichRes.json();
-        for (const enriched of enrichData.people || []) {
-          if (enriched.id) {
-            enrichedResults[enriched.id] = enriched;
-          }
+        
+        if (enrichData.person && enrichData.person.id) {
+          enrichedResults[person.id] = enrichData.person;
+          console.log(`✅ Enriched ${person.first_name} ${person.last_name} - Email: ${enrichData.person.email || 'No email'}`);
+          enrichmentSuccess++;
+        } else {
+          console.warn(`⚠️ No enriched data returned for ${person.first_name} ${person.last_name}`);
+          enrichmentErrors++;
         }
       } catch (enrichErr) {
         console.warn("❌ Enrichment error:", enrichErr);
+        enrichmentErrors++;
       }
 
-      // Add delay between batches to avoid rate limits
-      await delay(300);
+      // Add delay between requests to avoid rate limits
+      await delay(500);
     }
+
+    console.log(`📊 Enrichment Summary: ${enrichmentSuccess} successful, ${enrichmentErrors} failed`);
 
     // STEP 3: COMBINE SEARCH + ENRICHMENT DATA
     const apolloLeads = people.slice(0, params.limit).map((person) => {
       const enriched = enrichedResults[person.id] || {};
-      const email = enriched.email || null; // Only use real emails from enrichment
+      const email = enriched.email && enriched.email !== 'email_not_unlocked@domain.com' ? enriched.email : null; // Only use real emails from enrichment
 
       return {
         name: `${person.first_name || ""} ${person.last_name || ""}`.trim(),
@@ -254,7 +263,8 @@ async function sourceFromApollo(params: {
       };
     });
 
-    console.log(`✅ Apollo returned ${apolloLeads.length} prospects, ${apolloLeads.filter(l => l.email).length} with emails`);
+    const emailCount = apolloLeads.filter(l => l.email && l.email !== 'email_not_unlocked@domain.com').length;
+    console.log(`✅ Apollo returned ${apolloLeads.length} prospects, ${emailCount} with real emails`);
     return apolloLeads;
 
   } catch (error) {
