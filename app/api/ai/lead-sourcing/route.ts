@@ -157,13 +157,15 @@ async function sourceFromApollo(params: {
   const ENRICH_URL = "https://api.apollo.io/api/v1/people/bulk_match";
 
   try {
-    // STEP 1: SEARCH FOR PEOPLE (no email revelation on search endpoint)
+    // STEP 1: SEARCH FOR PEOPLE (with email filters for verified emails only)
     const searchBody = {
       page: 1,
       per_page: Math.min(params.limit, 100),
       person_titles: params.jobTitles,
       q_keywords: params.industry,
-      // Remove reveal_* parameters - they don't work on search endpoint
+      // ✅ CRITICAL: Only get prospects with verified emails
+      contact_email_status: "verified",
+      must_have_email: true,
       ...(params.location && { person_locations: [params.location] }),
       ...(params.companySize && {
         organization_num_employees_ranges: [params.companySize],
@@ -436,7 +438,14 @@ async function saveParsedLeads(leads: any[], userId: string) {
   
   for (const lead of leads) {
     try {
-      // Check for duplicates
+      // ✅ FIX: Validate lead data FIRST before any database queries
+      if (!lead.name || !lead.email || !lead.source) {
+        console.error('❌ Invalid lead data (skipping):', { name: lead.name, email: lead.email, source: lead.source });
+        errorCount++;
+        continue;
+      }
+
+      // Check for duplicates (only if email exists)
       const existing = await prisma.contact.findFirst({
         where: {
           userId,
@@ -447,13 +456,6 @@ async function saveParsedLeads(leads: any[], userId: string) {
       if (existing) {
         duplicateCount++;
         console.log('🔄 Duplicate contact found:', lead.email);
-        continue;
-      }
-
-      // Validate lead data before saving
-      if (!lead.name || !lead.email || !lead.source) {
-        console.error('❌ Invalid lead data:', { name: lead.name, email: lead.email, source: lead.source });
-        errorCount++;
         continue;
       }
 
