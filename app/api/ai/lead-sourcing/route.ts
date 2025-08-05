@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../../lib/prisma';
 import { Prisma } from '@prisma/client';
+import { validateDomain, extractDomainFromEmail, type DomainStatus } from '../../../../lib/domain-validator';
 
 export const dynamic = 'force-dynamic';
 
@@ -442,10 +443,13 @@ Respond with JSON array matching this format:
 async function saveParsedLeads(leads: any[], userId: string) {
   console.log('💾 Saving leads to database...', { count: leads.length });
 
-  const savedLeads = [];
+    const savedLeads = [];
   let duplicateCount = 0;
   let errorCount = 0;
-  
+  let rejectedCount = 0;
+
+  console.log('🔍 Starting domain validation for leads...');
+
   for (const lead of leads) {
     try {
       // ✅ FIX: Validate lead data FIRST before any database queries
@@ -455,7 +459,28 @@ async function saveParsedLeads(leads: any[], userId: string) {
         continue;
       }
 
-      // Check for duplicates (only if email exists)
+      // ✅ PREMIUM FEATURE: Domain validation before saving
+      const domain = extractDomainFromEmail(lead.email);
+      if (!domain) {
+        console.error('❌ Invalid email domain:', lead.email);
+        errorCount++;
+        continue;
+      }
+
+      console.log(`🔍 Validating domain: ${domain} for ${lead.email}`);
+      const domainStatus = await validateDomain(domain);
+      
+      if (domainStatus !== 'active') {
+        console.log(`🚫 Rejecting lead due to domain status: ${domainStatus} - ${lead.email}`);
+        
+        // Save to rejected leads table for analytics
+        await prisma.$queryRaw`INSERT INTO rejected_leads (id, "userId", name, email, company, position, source, "domainStatus") VALUES (${Math.random().toString(36).substring(2)}, ${userId}, ${lead.name}, ${lead.email}, ${lead.company}, ${lead.position}, ${lead.source.toUpperCase()}, ${domainStatus})`;
+        
+        rejectedCount++;
+        continue;
+      }
+
+      // Check for duplicates (only if email exists and domain is valid)
       const existing = await prisma.contact.findFirst({
         where: {
           userId,
@@ -480,11 +505,13 @@ async function saveParsedLeads(leads: any[], userId: string) {
           source: lead.source.toUpperCase() as any,
           status: 'COLD',
           tags: lead.tags || [],
-          notes: lead.aiInsights || null
+          notes: lead.aiInsights || null,
+          domainStatus: 'active',
+          lastDomainValidated: new Date()
         }
       });
       savedLeads.push(savedLead);
-      console.log('✅ Saved lead:', lead.name, '-', lead.email);
+      console.log('✅ Saved validated lead:', lead.name, '-', lead.email);
       
     } catch (error) {
       errorCount++;
@@ -501,6 +528,7 @@ async function saveParsedLeads(leads: any[], userId: string) {
     total: leads.length,
     saved: savedLeads.length,
     duplicates: duplicateCount,
+    rejected: rejectedCount,
     errors: errorCount
   });
 

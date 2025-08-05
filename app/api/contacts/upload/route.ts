@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../../lib/prisma';
+import { validateDomain, extractDomainFromEmail, type DomainStatus } from '../../../../lib/domain-validator';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,11 +11,13 @@ interface UploadResponse {
     totalRows: number;
     created: number;
     skippedExisting: number;
+    rejected: number;
     validationErrors: number;
   };
   details: {
     createdContacts: { name: string; email: string }[];
     skippedEmails: string[];
+    rejectedDomains: { email: string; reason: string }[];
     validationErrors: string[];
   };
 }
@@ -188,26 +191,73 @@ export async function POST(request: NextRequest) {
     const newContacts = uniqueContacts.filter(c => !existingEmailSet.has(c.email));
     const skippedExisting = uniqueContacts.filter(c => existingEmailSet.has(c.email));
 
-    console.log('🆕 New contacts to create:', newContacts.length);
+    console.log('🆕 New contacts to validate:', newContacts.length);
     console.log('⏭️ Existing contacts skipped:', skippedExisting.length);
 
-    // Create new contacts in database
+    // ✅ PREMIUM FEATURE: Domain validation for CSV uploads
+    const validatedContacts = [];
+    const rejectedContacts = [];
     let createdCount = 0;
-    if (newContacts.length > 0) {
-      const createData = newContacts.map(contact => ({
-        ...contact,
-        userId: user.id,
-        tags: [],
-      }));
 
+    console.log('🔍 Starting domain validation for CSV contacts...');
+
+    for (const contact of newContacts) {
+      try {
+        const domain = extractDomainFromEmail(contact.email);
+        if (!domain) {
+          rejectedContacts.push({ email: contact.email, reason: 'Invalid email format' });
+          continue;
+        }
+
+        console.log(`🔍 Validating domain: ${domain} for ${contact.email}`);
+        const domainStatus = await validateDomain(domain);
+        
+        if (domainStatus !== 'active') {
+          console.log(`🚫 Rejecting CSV contact due to domain status: ${domainStatus} - ${contact.email}`);
+          
+          // Save to rejected leads table for analytics  
+          await prisma.$queryRaw`INSERT INTO rejected_leads (id, "userId", name, email, company, position, source, "domainStatus") VALUES (${Math.random().toString(36).substring(2)}, ${user.id}, ${contact.name}, ${contact.email}, ${contact.company}, ${contact.position}, 'MANUAL', ${domainStatus})`;
+          
+          rejectedContacts.push({ 
+            email: contact.email, 
+            reason: `Domain ${domainStatus === 'parked' ? 'is parked' : 'does not resolve'}` 
+          });
+          continue;
+        }
+
+        // Domain is valid, add to validated contacts
+        validatedContacts.push({
+          ...contact,
+          userId: user.id,
+          tags: [],
+          domainStatus: 'active',
+          lastDomainValidated: new Date()
+        });
+
+      } catch (error) {
+        console.error(`❌ Error validating ${contact.email}:`, error);
+        rejectedContacts.push({ email: contact.email, reason: 'Validation error' });
+      }
+    }
+
+    // Create validated contacts in database
+    if (validatedContacts.length > 0) {
       const createResult = await prisma.contact.createMany({
-        data: createData,
+        data: validatedContacts,
         skipDuplicates: true,
       });
 
       createdCount = createResult.count;
-      console.log('✅ Contacts created in database:', createdCount);
+      console.log('✅ Validated contacts created in database:', createdCount);
     }
+
+    console.log('📊 CSV processing summary:', {
+      total: dataRows.length,
+      created: createdCount,
+      existing: skippedExisting.length,
+      rejected: rejectedContacts.length,
+      validationErrors: validationErrors.length
+    });
 
     // Prepare response
     const response: UploadResponse = {
@@ -216,11 +266,13 @@ export async function POST(request: NextRequest) {
         totalRows: dataRows.length,
         created: createdCount,
         skippedExisting: skippedExisting.length,
+        rejected: rejectedContacts.length,
         validationErrors: validationErrors.length,
       },
       details: {
-        createdContacts: newContacts.map(c => ({ name: c.name, email: c.email })),
+        createdContacts: validatedContacts.map(c => ({ name: c.name, email: c.email })),
         skippedEmails: skippedExisting.map(c => c.email),
+        rejectedDomains: rejectedContacts,
         validationErrors: validationErrors,
       }
     };

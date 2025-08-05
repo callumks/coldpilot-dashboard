@@ -28,6 +28,7 @@ model User {
   conversations   Conversation[]
   analytics       Analytics[]
   emailTemplates  EmailTemplate[]
+  rejectedLeads   RejectedLead[]
 
   @@map("users")
 }
@@ -71,6 +72,8 @@ model Contact {
   notes          String?
   linkedinUrl    String?
   phoneNumber    String?
+  domainStatus   String        @default("unknown") // "active", "parked", "does_not_resolve", "unknown"
+  lastDomainValidated DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -416,4 +419,22 @@ enum CampaignEventType {
   EMAIL_UNSUBSCRIBED // Unsubscribe request
   CONTACT_PAUSED    // Contact manually paused
   CONTACT_COMPLETED // Contact finished sequence
+}
+
+// Rejected Lead model - for tracking leads excluded due to domain validation
+model RejectedLead {
+  id             String   @id @default(cuid())
+  name           String?
+  email          String
+  company        String?
+  position       String?
+  source         String   // Source of the lead (APOLLO, LINKEDIN, etc.)
+  domainStatus   String   // Reason for rejection: "parked", "does_not_resolve"
+  rejectedAt     DateTime @default(now())
+  
+  // For analytics and QA
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("rejected_leads")
 }
