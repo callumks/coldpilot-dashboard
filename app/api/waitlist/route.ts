@@ -23,7 +23,9 @@ export async function POST(request: NextRequest) {
     if (contentType.includes('application/json')) {
       body = await request.json();
       console.log('🔍 JSON body received:', body);
-      ({ name, email } = body);
+      // Handle both lowercase and capitalized field names from Framer
+      name = body.name || body.Name;
+      email = body.email || body.Email;
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
       const formData = await request.text();
       console.log('🔍 Form data received:', formData);
@@ -36,7 +38,9 @@ export async function POST(request: NextRequest) {
       try {
         body = await request.json();
         console.log('🔍 Fallback JSON body received:', body);
-        ({ name, email } = body);
+        // Handle both lowercase and capitalized field names from Framer
+        name = body.name || body.Name;
+        email = body.email || body.Email;
       } catch (e) {
         console.log('❌ Unable to parse request body');
         return NextResponse.json(
