@@ -1,6 +1,7 @@
 // Google OAuth initiation endpoint
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { getGoogleAuthUrl } from '../../../../lib/auth/google-oauth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,11 +15,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // We'll implement the actual OAuth initiation here
-    return NextResponse.json({ 
-      message: 'Google OAuth initiation - coming soon',
-      userId 
-    });
+    // Generate Google OAuth URL
+    const authUrl = getGoogleAuthUrl(userId);
+    
+    console.log('✅ Generated Google OAuth URL');
+    
+    // Redirect to Google OAuth
+    return NextResponse.redirect(authUrl);
 
   } catch (error) {
     console.error('💥 Google OAuth initiation error:', error);
