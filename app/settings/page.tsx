@@ -262,6 +262,25 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-green-400 text-sm flex items-center gap-1"><CheckCircle className="h-4 w-4"/> Connected</span>
+                  <button
+                    onClick={async () => {
+                      if (!googleAccount) return;
+                      try {
+                        await fetch(`/api/email-accounts/${googleAccount.id}`, { method: 'DELETE' });
+                        // refresh list
+                        const res = await fetch('/api/email-accounts', { cache: 'no-store' });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setConnectedAccounts(data.accounts || []);
+                        }
+                      } catch (e) {
+                        console.error('Failed to disconnect Google account', e);
+                      }
+                    }}
+                    className="text-red-400 hover:text-red-300 text-sm"
+                  >
+                    Disconnect
+                  </button>
                 </div>
               </div>
             ) : (
@@ -293,6 +312,24 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-green-400 text-sm flex items-center gap-1"><CheckCircle className="h-4 w-4"/> Connected</span>
+                  <button
+                    onClick={async () => {
+                      if (!outlookAccount) return;
+                      try {
+                        await fetch(`/api/email-accounts/${outlookAccount.id}`, { method: 'DELETE' });
+                        const res = await fetch('/api/email-accounts', { cache: 'no-store' });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setConnectedAccounts(data.accounts || []);
+                        }
+                      } catch (e) {
+                        console.error('Failed to disconnect Outlook account', e);
+                      }
+                    }}
+                    className="text-red-400 hover:text-red-300 text-sm"
+                  >
+                    Disconnect
+                  </button>
                 </div>
               </div>
             ) : (
