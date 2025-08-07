@@ -57,6 +57,14 @@ const Settings: React.FC = () => {
     }));
   };
 
+  const handleConnectGoogle = () => {
+    window.location.href = '/api/auth/google';
+  };
+
+  const handleConnectOutlook = () => {
+    window.location.href = '/api/auth/outlook';
+  };
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -214,17 +222,32 @@ const Settings: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-gray-700 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">G</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button onClick={handleConnectGoogle} className="flex items-center justify-between p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-gray-700 rounded-lg transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">G</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">Connect Google (Gmail)</p>
+                    <p className="text-xs text-gray-400">OAuth with Google Workspace</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-white font-medium">Gmail Integration</p>
-                  <p className="text-xs text-gray-400">Connected</p>
+                <span className="text-blue-400 text-sm">Connect</span>
+              </button>
+
+              <button onClick={handleConnectOutlook} className="flex items-center justify-between p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-gray-700 rounded-lg transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">O</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">Connect Microsoft (Outlook)</p>
+                    <p className="text-xs text-gray-400">OAuth with Microsoft 365</p>
+                  </div>
                 </div>
-              </div>
-              <button className="text-red-400 hover:text-red-300 text-sm">Disconnect</button>
+                <span className="text-blue-400 text-sm">Connect</span>
+              </button>
             </div>
 
             <button className="w-full flex items-center gap-3 p-4 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 transition-all">
