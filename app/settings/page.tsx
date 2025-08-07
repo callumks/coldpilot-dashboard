@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Save, Bell, Mail, Download, Upload, Key, Zap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Save, Bell, Mail, Download, Upload, Key, Zap, CheckCircle, MailCheck } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import SubscriptionCard from '../../src/components/SubscriptionCard';
+
+type ConnectedAccount = {
+  id: string;
+  email: string;
+  provider: 'GMAIL' | 'OUTLOOK' | 'SMTP';
+};
 
 const Settings: React.FC = () => {
   const [notifications, setNotifications] = useState({
@@ -23,16 +29,14 @@ const Settings: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+
   const handleSaveChanges = async () => {
     setIsSaving(true);
-    
     try {
-      // Simulate API call - replace with actual API when backend is ready
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Here you would make actual API calls to save settings
       console.log('Saving settings:', { notifications, preferences });
-      
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
@@ -64,6 +68,28 @@ const Settings: React.FC = () => {
   const handleConnectOutlook = () => {
     window.location.href = '/api/auth/outlook';
   };
+
+  useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        setIsLoadingAccounts(true);
+        const res = await fetch('/api/email-accounts', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        setConnectedAccounts(data.accounts || []);
+      } catch (e) {
+        console.error('Failed to load connected accounts', e);
+      } finally {
+        setIsLoadingAccounts(false);
+      }
+    };
+    loadAccounts();
+  }, []);
+
+  const hasGoogle = connectedAccounts.some(a => a.provider === 'GMAIL');
+  const googleAccount = connectedAccounts.find(a => a.provider === 'GMAIL');
+  const hasOutlook = connectedAccounts.some(a => a.provider === 'OUTLOOK');
+  const outlookAccount = connectedAccounts.find(a => a.provider === 'OUTLOOK');
 
   return (
     <DashboardLayout>
@@ -222,8 +248,24 @@ const Settings: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={handleConnectGoogle} className="flex items-center justify-between p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-gray-700 rounded-lg transition-all">
+            {/* Google card */}
+            {hasGoogle ? (
+              <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-gray-700 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <MailCheck className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">Gmail Connected</p>
+                    <p className="text-xs text-gray-400">{googleAccount?.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-green-400 text-sm flex items-center gap-1"><CheckCircle className="h-4 w-4"/> Connected</span>
+                </div>
+              </div>
+            ) : (
+              <button onClick={handleConnectGoogle} className="flex items-center justify-between w-full p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-gray-700 rounded-lg transition-all">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">G</span>
@@ -235,8 +277,26 @@ const Settings: React.FC = () => {
                 </div>
                 <span className="text-blue-400 text-sm">Connect</span>
               </button>
+            )}
 
-              <button onClick={handleConnectOutlook} className="flex items-center justify-between p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-gray-700 rounded-lg transition-all">
+            {/* Outlook card */}
+            {hasOutlook ? (
+              <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-gray-700 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <MailCheck className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">Outlook Connected</p>
+                    <p className="text-xs text-gray-400">{outlookAccount?.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-green-400 text-sm flex items-center gap-1"><CheckCircle className="h-4 w-4"/> Connected</span>
+                </div>
+              </div>
+            ) : (
+              <button onClick={handleConnectOutlook} className="flex items-center justify-between w-full p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-gray-700 rounded-lg transition-all">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">O</span>
@@ -248,7 +308,11 @@ const Settings: React.FC = () => {
                 </div>
                 <span className="text-blue-400 text-sm">Connect</span>
               </button>
-            </div>
+            )}
+
+            {isLoadingAccounts && (
+              <p className="text-xs text-gray-500">Loading connections…</p>
+            )}
 
             <button className="w-full flex items-center gap-3 p-4 border-2 border-dashed border-gray-700 rounded-lg hover:border-gray-600 transition-all">
               <Zap className="h-5 w-5 text-gray-400" />
