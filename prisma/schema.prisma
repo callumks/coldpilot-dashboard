@@ -22,13 +22,14 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relationships
-  subscription    Subscription?
-  contacts        Contact[]
-  campaigns       Campaign[]
-  conversations   Conversation[]
-  analytics       Analytics[]
-  emailTemplates  EmailTemplate[]
-  rejectedLeads   RejectedLead[]
+  subscription           Subscription?
+  contacts               Contact[]
+  campaigns              Campaign[]
+  conversations          Conversation[]
+  analytics              Analytics[]
+  emailTemplates         EmailTemplate[]
+  rejectedLeads          RejectedLead[]
+  connectedEmailAccounts ConnectedEmailAccount[]
 
   @@map("users")
 }
@@ -448,4 +449,41 @@ model WaitlistSignup {
   createdAt DateTime @default(now())
 
   @@map("waitlist_signups")
+}
+
+// Connected Email Account model - for user's connected email providers
+model ConnectedEmailAccount {
+  id           String          @id @default(cuid())
+  userId       String
+  email        String          @unique
+  provider     EmailProvider
+  
+  // OAuth2 tokens (Gmail, Outlook)
+  accessToken  String?         // Encrypted
+  refreshToken String?         // Encrypted
+  expiresAt    DateTime?
+  
+  // SMTP credentials
+  smtpHost     String?
+  smtpPort     Int?
+  smtpUser     String?
+  smtpPass     String?         // Encrypted
+  
+  // Status and metadata
+  isActive     Boolean         @default(true)
+  lastUsed     DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  
+  // Relationships
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("connected_email_accounts")
+}
+
+// Email Provider enum
+enum EmailProvider {
+  GMAIL
+  OUTLOOK
+  SMTP
 }
