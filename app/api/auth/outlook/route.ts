@@ -1,6 +1,7 @@
 // Microsoft Outlook OAuth initiation endpoint
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { getOutlookAuthUrl } from '../../../../lib/auth/outlook-oauth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,11 +15,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // We'll implement the actual OAuth initiation here
-    return NextResponse.json({ 
-      message: 'Microsoft OAuth initiation - coming soon',
-      userId 
-    });
+    const authUrl = getOutlookAuthUrl(userId);
+    return NextResponse.redirect(authUrl);
 
   } catch (error) {
     console.error('💥 Microsoft OAuth initiation error:', error);
