@@ -20,11 +20,13 @@
     "railway:deploy": "prisma db push --accept-data-loss && prisma generate"
   },
   "dependencies": {
+    "@azure/msal-node": "^3.7.0",
     "@clerk/nextjs": "^6.28.1",
     "@heroicons/react": "^2.0.18",
     "@prisma/client": "^6.13.0",
     "@types/multer": "^2.0.0",
     "@types/papaparse": "^5.3.16",
+    "googleapis": "^155.0.0",
     "lucide-react": "^0.535.0",
     "multer": "^2.0.2",
     "next": "^14.0.0",
