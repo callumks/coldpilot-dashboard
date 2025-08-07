@@ -40,7 +40,7 @@ export function getGoogleAuthUrl(userId: string): string {
     access_type: 'offline',
     scope: GMAIL_SCOPES,
     prompt: 'consent', // Force consent to get refresh token
-    state: userId, // Pass user ID for callback
+    state: userId, // Pass Clerk userId for callback
   });
 }
 
@@ -49,7 +49,7 @@ export function getGoogleAuthUrl(userId: string): string {
  */
 export async function exchangeGoogleAuthCode(
   code: string,
-  userId: string
+  clerkUserId: string
 ): Promise<{ success: boolean; error?: string; email?: string }> {
   try {
     console.log('🔄 Exchanging Google auth code for tokens...');
@@ -76,6 +76,18 @@ export async function exchangeGoogleAuthCode(
     }
     
     console.log('📧 Retrieved user email:', email);
+
+    // Resolve internal app user id (foreign key target)
+    let appUser = await prisma.user.findUnique({ where: { clerkId: clerkUserId } });
+    if (!appUser) {
+      // Create minimal user record if missing
+      appUser = await prisma.user.create({
+        data: {
+          clerkId: clerkUserId,
+          email,
+        }
+      });
+    }
     
     // Calculate token expiry
     const expiresAt = tokens.expiry_date 
@@ -94,7 +106,7 @@ export async function exchangeGoogleAuthCode(
         updatedAt: new Date()
       },
       create: {
-        userId,
+        userId: appUser.id,
         email,
         provider: 'GMAIL',
         accessToken: tokens.access_token,

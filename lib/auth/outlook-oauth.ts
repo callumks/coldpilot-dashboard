@@ -50,12 +50,12 @@ export function getOutlookAuthUrl(userId: string): string {
     prompt: 'consent'
   } as const;
 
-  return msalClient.getAuthCodeUrl(authCodeUrlParameters) as unknown as string;
+  return (msalClient.getAuthCodeUrl(authCodeUrlParameters) as unknown) as string;
 }
 
 export async function exchangeOutlookAuthCode(
   code: string,
-  userId: string
+  clerkUserId: string
 ): Promise<{ success: boolean; error?: string; email?: string }> {
   try {
     const msalClient = createMicrosoftMSALClient();
@@ -77,6 +77,17 @@ export async function exchangeOutlookAuthCode(
       throw new Error('Could not retrieve user email from Microsoft');
     }
 
+    // Resolve internal app user id
+    let appUser = await prisma.user.findUnique({ where: { clerkId: clerkUserId } });
+    if (!appUser) {
+      appUser = await prisma.user.create({
+        data: {
+          clerkId: clerkUserId,
+          email
+        }
+      });
+    }
+
     const expiresAt = result.expiresOn || new Date(Date.now() + 3600 * 1000);
 
     // Upsert connected account
@@ -91,7 +102,7 @@ export async function exchangeOutlookAuthCode(
         updatedAt: new Date()
       },
       create: {
-        userId,
+        userId: appUser.id,
         email,
         provider: 'OUTLOOK',
         accessToken: result.accessToken,
