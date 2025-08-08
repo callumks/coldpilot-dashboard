@@ -41,7 +41,7 @@ export function createMicrosoftMSALClient(): ConfidentialClientApplication {
   return new ConfidentialClientApplication(createMsalConfig());
 }
 
-export function getOutlookAuthUrl(userId: string): string {
+export async function getOutlookAuthUrl(userId: string): Promise<string> {
   const msalClient = createMicrosoftMSALClient();
   const authCodeUrlParameters = {
     scopes: OUTLOOK_SCOPES,
@@ -50,7 +50,8 @@ export function getOutlookAuthUrl(userId: string): string {
     prompt: 'consent'
   } as const;
 
-  return (msalClient.getAuthCodeUrl(authCodeUrlParameters) as unknown) as string;
+  const url = await msalClient.getAuthCodeUrl(authCodeUrlParameters);
+  return url;
 }
 
 export async function exchangeOutlookAuthCode(

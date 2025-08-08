@@ -6,7 +6,7 @@ import { getOutlookAuthUrl } from '../../../../lib/auth/outlook-oauth';
 export const dynamic = 'force-dynamic';
 
 // GET /api/auth/outlook - Initiate Microsoft OAuth flow
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     console.log('🔄 Initiating Microsoft OAuth flow...');
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const authUrl = getOutlookAuthUrl(userId);
+    const authUrl = await getOutlookAuthUrl(userId);
     return NextResponse.redirect(authUrl);
 
   } catch (error) {
