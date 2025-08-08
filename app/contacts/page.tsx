@@ -100,6 +100,24 @@ const Contacts: React.FC = () => {
     alert('🗑️ Contact deletion will be implemented with proper API integration.');
   };
 
+  const handleMarkContacted = async (contactId: string) => {
+    try {
+      const res = await fetch(`/api/contacts/${contactId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CONTACTED' })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to update contact');
+      }
+      setRefreshTrigger(prev => prev + 1);
+    } catch (err) {
+      console.error('Mark as Contacted failed:', err);
+      alert(err instanceof Error ? err.message : 'Failed to update contact');
+    }
+  };
+
   const handleUpdateContactTags = async (contactId: string, newTags: string[]) => {
     try {
       console.log('Update tags for contact:', contactId, newTags);
@@ -405,6 +423,7 @@ const Contacts: React.FC = () => {
                         })}
                         onMessage={handleMessageContact}
                         onDelete={(contactId: number) => handleDeleteContact(contactId.toString())}
+                        onMarkContacted={(contactId: number) => handleMarkContacted(contactId.toString())}
                         isVisible={hoveredContactId === contact.id}
                       />
                     </td>

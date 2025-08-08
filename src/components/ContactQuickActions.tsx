@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Edit3, MessageCircle, Trash2, MoreHorizontal } from 'lucide-react';
+import { Edit3, MessageCircle, Trash2, MoreHorizontal, CheckCircle2 } from 'lucide-react';
 
 interface ContactQuickActionsProps {
   contact: {
@@ -13,6 +13,7 @@ interface ContactQuickActionsProps {
   onEdit: (contact: any) => void;
   onMessage: (contact: any) => void;
   onDelete: (contactId: number) => void;
+  onMarkContacted?: (contactId: number) => void;
   isVisible: boolean;
 }
 
@@ -21,6 +22,7 @@ const ContactQuickActions: React.FC<ContactQuickActionsProps> = ({
   onEdit,
   onMessage,
   onDelete,
+  onMarkContacted,
   isVisible
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -92,6 +94,14 @@ const ContactQuickActions: React.FC<ContactQuickActionsProps> = ({
             <MessageCircle className="h-4 w-4 group-hover:scale-110 transition-transform" />
           </button>
           
+          <button
+            onClick={(e) => { e.stopPropagation(); onMarkContacted && onMarkContacted(contact.id); }}
+            className="p-2 hover:bg-emerald-500/10 text-emerald-400 hover:text-emerald-300 rounded-lg transition-all duration-200 group"
+            title="Mark as Contacted"
+          >
+            <CheckCircle2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
+          </button>
+
           <button
             onClick={handleDelete}
             className="p-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 rounded-lg transition-all duration-200 group"
