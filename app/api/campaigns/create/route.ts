@@ -124,8 +124,9 @@ export async function POST(request: NextRequest) {
               name: stepData.name,
               delayDays: stepData.delayDays,
               isActive: stepData.isActive,
-              // For now, we'll store email content directly in the step
-              // Later this could reference EmailTemplate records
+              // Store email content directly in the step for now
+              subject: stepData.subject,
+              body: stepData.body,
             }
           })
         )

@@ -406,20 +406,19 @@ class CampaignEngine {
       where: { campaignId }
     });
 
-    const emails = await prisma.message.findMany({
+    const messages = await prisma.message.findMany({
       where: {
         conversation: { campaignId }
-      },
-      select: { sentAt: true, deliveredAt: true }
+      }
     });
 
-    const emailsSent = emails.length;
-    const emailsDelivered = emails.filter(m => m.deliveredAt !== null).length;
-    const emailsBounced = 0;
+    const emailsSent = messages.length; // each created message is a send attempt
+    const emailsDelivered = messages.filter(m => !!m.deliveredAt).length;
+    const emailsBounced = 0; // not tracked yet
 
     // These would need webhook integrations from email providers
-    const emailsOpened = 0; // TODO
-    const emailsReplied = 0; // TODO
+    const emailsOpened = 0; // TODO: Track from email provider webhooks
+    const emailsReplied = 0; // TODO: Track from conversation replies
 
     const openRate = emailsSent > 0 ? (emailsOpened / emailsSent) * 100 : 0;
     const replyRate = emailsSent > 0 ? (emailsReplied / emailsSent) * 100 : 0;
@@ -474,8 +473,3 @@ class CampaignEngine {
 
 // Export singleton instance
 export const campaignEngine = new CampaignEngine();
-
-// Auto-start in production
-if (process.env.NODE_ENV === 'production') {
-  campaignEngine.start();
-}

@@ -144,6 +144,9 @@ model CampaignStep {
   isActive        Boolean   @default(true) // Can be toggled on/off
   
   // Email Content
+  // Store subject/body directly for now to simplify execution
+  subject         String
+  body            String
   emailTemplateId String?
   emailTemplate   EmailTemplate? @relation(fields: [emailTemplateId], references: [id], onDelete: SetNull)
   
