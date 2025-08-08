@@ -465,6 +465,9 @@ model ConnectedEmailAccount {
   accessToken  String?         // Encrypted
   refreshToken String?         // Encrypted
   expiresAt    DateTime?
+  // Microsoft token cache for silent refresh
+  msalCache    String?
+  msalHomeAccountId String?
   
   // SMTP credentials
   smtpHost     String?

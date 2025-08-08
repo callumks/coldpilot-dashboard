@@ -8,7 +8,7 @@ const MICROSOFT_TENANT_ID = process.env.MICROSOFT_TENANT_ID || 'common';
 const MICROSOFT_REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/outlook/callback`;
 
 // Required Microsoft Graph scopes
-const OUTLOOK_SCOPES = [
+export const OUTLOOK_SCOPES = [
   'https://graph.microsoft.com/Mail.Send',
   'https://graph.microsoft.com/Mail.ReadWrite',
   'https://graph.microsoft.com/User.Read',
@@ -92,7 +92,9 @@ export async function exchangeOutlookAuthCode(
     const expiresAt = result.expiresOn || new Date(Date.now() + 3600 * 1000);
 
     // Upsert connected account
-    await prisma.connectedEmailAccount.upsert({
+    const cache = msalClient.getTokenCache().serialize();
+
+    await (prisma as any).connectedEmailAccount.upsert({
       where: { email },
       update: {
         accessToken: result.accessToken,
@@ -100,7 +102,9 @@ export async function exchangeOutlookAuthCode(
         expiresAt,
         isActive: true,
         lastUsed: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        msalCache: cache,
+        msalHomeAccountId: result.account?.homeAccountId || null
       },
       create: {
         userId: appUser.id,
@@ -109,7 +113,9 @@ export async function exchangeOutlookAuthCode(
         accessToken: result.accessToken,
         expiresAt,
         isActive: true,
-        lastUsed: new Date()
+        lastUsed: new Date(),
+        msalCache: cache,
+        msalHomeAccountId: result.account?.homeAccountId || null
       }
     });
 

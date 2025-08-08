@@ -73,8 +73,39 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
     }
 
     if (account.provider === "OUTLOOK") {
-      // Send via Microsoft Graph using the user's delegated token stored in DB
-      const accessToken = account.accessToken;
+      // Send via Microsoft Graph using the user's delegated token with silent refresh
+      const { createMicrosoftMSALClient, OUTLOOK_SCOPES } = await import("../auth/outlook-oauth");
+      const msalClient = createMicrosoftMSALClient();
+
+      let accessToken = account.accessToken as string | undefined;
+      const isExpired = !account.expiresAt || new Date(account.expiresAt) <= new Date(Date.now() + 2 * 60 * 1000);
+
+      // Try silent refresh if we have cached tokens or token is near expiry
+      if ((account as any).msalCache) {
+        try {
+          msalClient.getTokenCache().deserialize((account as any).msalCache);
+          const accounts = await msalClient.getTokenCache().getAllAccounts();
+          const msalAccount = accounts.find(a => a.homeAccountId === (account as any).msalHomeAccountId) || accounts[0];
+          if (msalAccount && (isExpired || !accessToken)) {
+            const silent = await msalClient.acquireTokenSilent({
+              account: msalAccount,
+              scopes: OUTLOOK_SCOPES,
+            });
+            accessToken = silent.accessToken;
+            // Persist updated cache and expiry
+            await (prisma as any).connectedEmailAccount.update({
+              where: { id: account.id },
+              data: {
+                accessToken,
+                expiresAt: silent.expiresOn || new Date(Date.now() + 3600 * 1000),
+                msalCache: msalClient.getTokenCache().serialize(),
+              }
+            });
+          }
+        } catch (e) {
+          // Fallback to existing token
+        }
+      }
 
       const res = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
         method: "POST",
@@ -89,6 +120,35 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
         }),
       });
       if (!res.ok) {
+        // Retry once if unauthorized by attempting silent refresh
+        if (res.status === 401 && (account as any).msalCache) {
+          try {
+            msalClient.getTokenCache().deserialize((account as any).msalCache);
+            const accounts = await msalClient.getTokenCache().getAllAccounts();
+            const msalAccount = accounts.find(a => a.homeAccountId === (account as any).msalHomeAccountId) || accounts[0];
+            if (msalAccount) {
+              const silent = await msalClient.acquireTokenSilent({ account: msalAccount, scopes: OUTLOOK_SCOPES, forceRefresh: true });
+              accessToken = silent.accessToken;
+              await (prisma as any).connectedEmailAccount.update({
+                where: { id: account.id },
+                data: {
+                  accessToken,
+                  expiresAt: silent.expiresOn || new Date(Date.now() + 3600 * 1000),
+                  msalCache: msalClient.getTokenCache().serialize(),
+                }
+              });
+              const retry = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  message: { subject, body: { contentType: "HTML", content: body }, toRecipients: [{ emailAddress: { address: to, name: toName } }] },
+                  saveToSentItems: true,
+                }),
+              });
+              if (retry.ok) return { success: true };
+            }
+          } catch {}
+        }
         const text = await res.text();
         throw new Error(`Graph sendMail failed: ${res.status} ${text}`);
       }

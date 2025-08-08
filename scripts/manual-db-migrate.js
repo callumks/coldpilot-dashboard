@@ -25,6 +25,9 @@ async function run() {
     `UPDATE "campaign_steps" SET "body" = COALESCE("body", '') WHERE "body" IS NULL;`,
     `ALTER TABLE "campaign_steps" ALTER COLUMN "subject" SET NOT NULL;`,
     `ALTER TABLE "campaign_steps" ALTER COLUMN "body" SET NOT NULL;`,
+    // Connected email accounts: add MSAL cache columns for Outlook silent refresh
+    `ALTER TABLE "connected_email_accounts" ADD COLUMN IF NOT EXISTS "msalCache" TEXT;`,
+    `ALTER TABLE "connected_email_accounts" ADD COLUMN IF NOT EXISTS "msalHomeAccountId" TEXT;`,
   ];
 
   try {
