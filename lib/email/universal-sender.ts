@@ -11,10 +11,18 @@ type SendEmailParams = {
   messageId?: string;
   contactId?: string;
   campaignId?: string;
+  fromAccountId?: string;
+  overrideToEmail?: string;
 };
 
 // Pick the user's active connected email account to send from
-async function selectActiveSenderAccount(userId: string) {
+async function selectActiveSenderAccount(userId: string, preferredAccountId?: string) {
+  if (preferredAccountId) {
+    const specific = await (prisma as any).connectedEmailAccount.findFirst({
+      where: { id: preferredAccountId, userId, isActive: true },
+    });
+    if (specific) return specific;
+  }
   return (prisma as any).connectedEmailAccount.findFirst({
     where: { userId, isActive: true },
     orderBy: { updatedAt: "desc" },
@@ -22,7 +30,17 @@ async function selectActiveSenderAccount(userId: string) {
 }
 
 async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; error?: string }> {
-  const { userId, to, toName, subject, body } = params;
+  const { userId, subject, body, fromAccountId } = params;
+  let to = params.to;
+  let toName = params.toName;
+
+  // Sandbox/override routing to avoid real recipients
+  const globalOverride = process.env.EMAIL_TEST_RECIPIENT;
+  const sandboxEnabled = process.env.EMAIL_SANDBOX_MODE === 'true';
+  if (params.overrideToEmail || (sandboxEnabled && globalOverride)) {
+    toName = `TEST for ${to}`;
+    to = params.overrideToEmail || (globalOverride as string);
+  }
 
   // Enforce per-user daily send limits using Message records
   const rate = await checkDailyRateLimit(userId);
@@ -30,7 +48,7 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
     return { success: false, error: `Daily send limit reached (${rate.count}/${rate.limit})` };
   }
 
-  const account = await selectActiveSenderAccount(userId);
+  const account = await selectActiveSenderAccount(userId, fromAccountId);
   if (!account) {
     return { success: false, error: "No connected email account found" };
   }

@@ -322,7 +322,9 @@ class CampaignEngine {
         body: this.personalizeContent(step.body || '', contact),
         messageId: message.id,
         campaignId: campaign.id,
-        contactId: contact.id
+        contactId: contact.id,
+        fromAccountId: campaign.fromAccountId || undefined,
+        overrideToEmail: campaign.recipientOverride || undefined
       });
 
       // Update message status

@@ -45,6 +45,10 @@ interface CampaignForm {
   
   // Steps
   steps: CampaignStep[];
+
+  // Test mode (do not email real leads)
+  testModeEnabled?: boolean;
+  testEmail?: string;
 }
 
 const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
@@ -88,7 +92,9 @@ const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
         subject: '',
         body: ''
       }
-    ]
+    ],
+    testModeEnabled: false,
+    testEmail: ''
   });
 
   // Mock contact tags for targeting
@@ -207,6 +213,30 @@ const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
       
       if (formData.steps.some(step => !step.subject.trim() || !step.body.trim())) {
         throw new Error('All email steps must have subject and body');
+      }
+
+      // If test mode is enabled, send a single test email and exit without creating a campaign
+      if (formData.testModeEnabled) {
+        if (!formData.testEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.testEmail)) {
+          throw new Error('Please enter a valid test email address');
+        }
+
+        const firstActiveStep = formData.steps.find(s => s.isActive) || formData.steps[0];
+        const res = await fetch('/api/test-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: formData.testEmail,
+            subject: firstActiveStep.subject || `${formData.name} – Test Email`,
+            html: firstActiveStep.body || '<p>Test message</p>'
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to send test email');
+        }
+        alert('Test email sent successfully to ' + formData.testEmail);
+        return; // Do not proceed to create campaign
       }
 
       // Submit to API
@@ -623,6 +653,38 @@ Best regards,
               formData.sendingWindow.weekdaysOnly ? 'translate-x-6' : 'translate-x-0.5'
             }`} />
           </button>
+        </div>
+
+        {/* Test Mode */}
+        <div className="mt-6 p-4 border border-yellow-500/30 rounded-lg bg-yellow-500/5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-medium text-yellow-300">Test Mode (Safe)</p>
+              <p className="text-sm text-yellow-400">Send a single test email to your inbox. No contacts will be messaged.</p>
+            </div>
+            <button
+              onClick={() => setFormData(prev => ({ ...prev, testModeEnabled: !prev.testModeEnabled }))}
+              className={`w-12 h-6 rounded-full transition-colors relative ${
+                formData.testModeEnabled ? 'bg-yellow-500' : 'bg-gray-600'
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
+                formData.testModeEnabled ? 'translate-x-6' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+          {formData.testModeEnabled && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Test Email Address</label>
+              <input
+                type="email"
+                value={formData.testEmail || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, testEmail: e.target.value }))}
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
