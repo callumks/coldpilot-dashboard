@@ -100,11 +100,29 @@ const Contacts: React.FC = () => {
     alert('🗑️ Contact deletion will be implemented with proper API integration.');
   };
 
-  const handleUpdateContactTags = (contactId: string, newTags: string[]) => {
-    // In a real app, this would update the contact in the database
-    console.log('Update tags for contact:', contactId, newTags);
-    // TODO: Implement contact update API
-    alert('🔄 Contact tag updates will be implemented in the next iteration');
+  const handleUpdateContactTags = async (contactId: string, newTags: string[]) => {
+    try {
+      console.log('Update tags for contact:', contactId, newTags);
+      // If tag CONTACTED is present, mark contact as CONTACTED on backend
+      const tagSet = new Set(newTags.map(t => t.trim().toUpperCase()))
+      if (tagSet.has('CONTACTED')) {
+        const res = await fetch(`/api/contacts/${contactId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'CONTACTED' })
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Failed to update contact status');
+        }
+        // Refresh list to reflect status change
+        setRefreshTrigger(prev => prev + 1);
+      }
+      // Tag persistence not yet implemented; status linkage works now
+    } catch (err) {
+      console.error('Tag update/status link failed:', err);
+      alert(err instanceof Error ? err.message : 'Failed to update contact');
+    }
   };
 
   const handleDownloadCSV = async () => {
