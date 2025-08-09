@@ -16,15 +16,23 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { status } = await request.json();
     if (!status) return NextResponse.json({ error: 'Missing status' }, { status: 400 });
 
-    const updated = await prisma.contact.update({
+    const normalized = String(status).toUpperCase();
+
+    // Update using updateMany to also enforce ownership
+    const result = await prisma.contact.updateMany({
       where: { id: params.id, userId: user.id },
       data: {
-        status: status,
-        ...(status === 'CONTACTED' && { lastContacted: new Date() })
+        status: normalized as any,
+        ...(normalized === 'CONTACTED' && { lastContacted: new Date() })
       }
     });
 
-    return NextResponse.json({ success: true, contact: { id: updated.id, status: updated.status, lastContacted: updated.lastContacted } });
+    if (result.count === 0) {
+      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
+    }
+
+    const updated = await prisma.contact.findUnique({ where: { id: params.id } });
+    return NextResponse.json({ success: true, contact: { id: updated?.id, status: updated?.status, lastContacted: updated?.lastContacted } });
   } catch (error) {
     console.error('Update contact status error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
