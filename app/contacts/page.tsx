@@ -412,18 +412,15 @@ const Contacts: React.FC = () => {
                     <td className="px-6 py-4">
                       <ContactQuickActions
                         contact={{
-                          id: parseInt(contact.id) || 0, // Convert string to number for compatibility
+                          id: contact.id,
                           name: contact.name,
                           email: contact.email,
                           company: contact.company || undefined
                         }}
-                        onEdit={(contact: any) => handleEditContact({
-                          ...contact,
-                          id: contact.id.toString() // Convert back to string for our handler
-                        })}
+                        onEdit={(c: any) => handleEditContact(c)}
                         onMessage={handleMessageContact}
-                        onDelete={(contactId: number) => handleDeleteContact(contactId.toString())}
-                        onMarkContacted={(contactId: number) => handleMarkContacted(contactId.toString())}
+                        onDelete={(contactId: string) => handleDeleteContact(contactId)}
+                        onMarkContacted={(contactId: string) => handleMarkContacted(contactId)}
                         isVisible={hoveredContactId === contact.id}
                       />
                     </td>

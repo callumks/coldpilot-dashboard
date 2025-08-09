@@ -5,15 +5,15 @@ import { Edit3, MessageCircle, Trash2, MoreHorizontal, CheckCircle2 } from 'luci
 
 interface ContactQuickActionsProps {
   contact: {
-    id: number;
+    id: string;
     name: string;
     email: string;
     company?: string;
   };
   onEdit: (contact: any) => void;
   onMessage: (contact: any) => void;
-  onDelete: (contactId: number) => void;
-  onMarkContacted?: (contactId: number) => void;
+  onDelete: (contactId: string) => void;
+  onMarkContacted?: (contactId: string) => void;
   isVisible: boolean;
 }
 
