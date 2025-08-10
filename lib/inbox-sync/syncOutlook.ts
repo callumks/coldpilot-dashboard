@@ -90,7 +90,8 @@ export async function syncOutlook({ account, state, since }: { account: any; sta
 
       const isOutbound = fromAddr === account.email.toLowerCase();
       const direction = isOutbound ? 'OUTBOUND' : 'INBOUND';
-      const existing = await prisma.message.findFirst({ where: { provider: 'OUTLOOK', externalId } });
+      // Avoid enum-type mismatch with legacy DB: check by accountId + externalId instead of provider enum
+      const existing = await prisma.message.findFirst({ where: { externalId, accountId: account.id } });
       if (existing) continue;
 
       const source = isOutbound ? 'MANUAL' : 'IMPORTED';
@@ -113,7 +114,7 @@ export async function syncOutlook({ account, state, since }: { account: any; sta
           },
           direction: direction as any,
           content: '',
-          provider: 'OUTLOOK',
+          // omit provider to avoid enum cast issues against legacy text column
           externalId,
           threadKey,
           accountId: account.id,
