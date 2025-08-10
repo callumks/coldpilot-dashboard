@@ -30,6 +30,7 @@ model User {
   emailTemplates         EmailTemplate[]
   rejectedLeads          RejectedLead[]
   connectedEmailAccounts ConnectedEmailAccount[]
+  accountSyncStates      AccountSyncState[]
 
   @@map("users")
 }
@@ -515,6 +516,8 @@ model ConnectedEmailAccount {
   
   // Relationships
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages     Message[]
+  syncState    AccountSyncState?
   
   @@map("connected_email_accounts")
 }
