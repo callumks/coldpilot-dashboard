@@ -72,7 +72,7 @@ export async function syncGmail({ account, state, since }: { account: any; state
           // omit provider to avoid enum cast issues against legacy text column
           externalId,
           threadKey,
-          accountId: account.id,
+          account: { connect: { id: account.id } },
           source: source as any,
           sentAt: new Date(headers['Date'] || Date.now()),
           receivedAt: isOutbound ? null : new Date(headers['Date'] || Date.now())

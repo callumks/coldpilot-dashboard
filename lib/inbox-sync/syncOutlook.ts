@@ -117,7 +117,7 @@ export async function syncOutlook({ account, state, since }: { account: any; sta
           // omit provider to avoid enum cast issues against legacy text column
           externalId,
           threadKey,
-          accountId: account.id,
+          account: { connect: { id: account.id } },
           source: source as any,
           sentAt: new Date(m.sentDateTime || Date.now()),
           receivedAt: isOutbound ? null : new Date(m.receivedDateTime || Date.now())
