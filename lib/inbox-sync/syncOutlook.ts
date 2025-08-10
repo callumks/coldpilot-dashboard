@@ -118,7 +118,6 @@ export async function syncOutlook({ account, state, since }: { account: any; sta
           externalId,
           threadKey,
           account: { connect: { id: account.id } },
-          source: source as any,
           sentAt: new Date(m.sentDateTime || Date.now()),
           receivedAt: isOutbound ? null : new Date(m.receivedDateTime || Date.now())
         }

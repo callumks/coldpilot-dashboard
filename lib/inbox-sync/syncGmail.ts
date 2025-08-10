@@ -73,7 +73,6 @@ export async function syncGmail({ account, state, since }: { account: any; state
           externalId,
           threadKey,
           account: { connect: { id: account.id } },
-          source: source as any,
           sentAt: new Date(headers['Date'] || Date.now()),
           receivedAt: isOutbound ? null : new Date(headers['Date'] || Date.now())
         }
