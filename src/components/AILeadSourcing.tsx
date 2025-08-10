@@ -62,16 +62,22 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
         .then(async (res) => {
           // Drain body to allow connection reuse
           try { await res.json(); } catch {}
+          try { window.localStorage.setItem('leadSourcingActive', '0'); } catch {}
           window.dispatchEvent(new CustomEvent('lead-sourcing:done'));
         })
         .catch(() => {
+          try { window.localStorage.setItem('leadSourcingActive', '0'); } catch {}
           window.dispatchEvent(new CustomEvent('lead-sourcing:done'));
         });
       // Close modal immediately and show global indicator
       setIsOpen(false);
+      try { window.localStorage.setItem('leadSourcingActive', '1'); } catch {}
       window.dispatchEvent(new CustomEvent('lead-sourcing:start'));
       // Failsafe: auto-complete after 3 minutes if no signal
-      setTimeout(() => window.dispatchEvent(new CustomEvent('lead-sourcing:done')), 3 * 60 * 1000);
+      setTimeout(() => {
+        try { window.localStorage.setItem('leadSourcingActive', '0'); } catch {}
+        window.dispatchEvent(new CustomEvent('lead-sourcing:done'));
+      }, 3 * 60 * 1000);
     } catch (err) {
       console.error('AI Lead Sourcing error:', err);
       setError(err instanceof Error ? err.message : 'Failed to source leads');

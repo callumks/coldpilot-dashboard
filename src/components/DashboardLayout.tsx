@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 
@@ -30,13 +31,30 @@ export default DashboardLayout;
 function LeadSourcingIndicator() {
   const [active, setActive] = useState(false);
   useEffect(() => {
-    const onStart = () => setActive(true);
-    const onDone = () => setActive(false);
+    // initialize from persisted flag
+    try {
+      const flag = typeof window !== 'undefined' ? window.localStorage.getItem('leadSourcingActive') : null;
+      if (flag === '1') setActive(true);
+    } catch {}
+
+    const onStart = () => {
+      setActive(true);
+    };
+    const onDone = () => {
+      setActive(false);
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'leadSourcingActive') {
+        setActive(e.newValue === '1');
+      }
+    };
     window.addEventListener('lead-sourcing:start', onStart as EventListener);
     window.addEventListener('lead-sourcing:done', onDone as EventListener);
+    window.addEventListener('storage', onStorage);
     return () => {
       window.removeEventListener('lead-sourcing:start', onStart as EventListener);
       window.removeEventListener('lead-sourcing:done', onDone as EventListener);
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
   if (!active) return null;
