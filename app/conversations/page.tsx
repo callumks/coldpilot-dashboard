@@ -135,7 +135,7 @@ const Conversations: React.FC = () => {
       {/* Split view: list left, detail right */}
       <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-2 h-[70vh]">
         {/* Left column: conversations list with its own scroller */}
-        <div className="min-w-0 overflow-y-auto">
+        <div className="min-w-0 overflow-y-auto overflow-x-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>

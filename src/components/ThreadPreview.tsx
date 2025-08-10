@@ -26,14 +26,14 @@ const ThreadPreview: React.FC<ThreadPreviewProps> = ({
     }`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 min-w-0">
             <h4 className={`text-sm font-medium truncate ${
               isUnread ? 'text-white' : 'text-gray-300'
             }`}>
               {sender}
             </h4>
             <span className="text-xs text-gray-500">·</span>
-            <span className="text-xs text-gray-500">{company}</span>
+            <span className="text-xs text-gray-500 truncate">{company}</span>
             {isUnread && (
               <div className="w-1.5 h-1.5 bg-primary-500 rounded-full"></div>
             )}
@@ -45,7 +45,7 @@ const ThreadPreview: React.FC<ThreadPreviewProps> = ({
             {subject}
           </p>
           
-          <p className="text-xs text-gray-500 truncate">
+          <p className="text-xs text-gray-500 truncate break-words">
             {preview}
           </p>
         </div>
