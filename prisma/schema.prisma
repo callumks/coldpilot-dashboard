@@ -278,8 +278,8 @@ model Message {
   openedAt       DateTime?
   emailMessageId String?     @unique // Legacy external email ID
   // Inbox sync additions
-  source         MessageSource @default(CAMPAIGN)
-  provider       EmailProvider?
+  source         String?       @default("CAMPAIGN")
+  provider       String?
   externalId     String?      // Provider message id
   threadKey      String?
   accountId      String?
