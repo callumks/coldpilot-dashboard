@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Clock, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../src/components/DashboardLayout';
 import ThreadPreview from '../../src/components/ThreadPreview';
+import ConversationDetail from '../../src/components/ConversationDetail';
 
 interface Conversation {
   id: string;
@@ -67,27 +68,8 @@ const Conversations: React.FC = () => {
 
   // Conversations are now fetched and filtered via API
 
-  const getUrgencyIndicator = (urgency: 'high' | 'medium' | 'low', responseTime: number) => {
-    if (urgency === 'high') {
-      return (
-        <div className="flex items-center gap-1 px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-md">
-          <AlertCircle className="h-3 w-3 text-red-400" />
-          <span className="text-xs text-red-400 font-medium">High Priority</span>
-        </div>
-      );
-    }
-    
-    if (responseTime <= 24) {
-      return (
-        <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/10 border border-orange-500/20 rounded-md">
-          <Clock className="h-3 w-3 text-orange-400" />
-          <span className="text-xs text-orange-400 font-medium">{responseTime}h to reply</span>
-        </div>
-      );
-    }
-
-    return null;
-  };
+  // Removed per request (no urgency/"0h to reply" chips)
+  const getUrgencyIndicator = () => null;
 
   return (
     <DashboardLayout>
@@ -150,8 +132,8 @@ const Conversations: React.FC = () => {
         </select>
       </div>
 
-      {/* Conversations List */}
-      <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl overflow-hidden hover:bg-white/[0.03] transition-all duration-300">
+      {/* Split view: list left, detail right */}
+      <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl overflow-hidden transition-all duration-300 grid grid-cols-1 lg:grid-cols-2">
         {loading ? (
           <div className="p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
@@ -208,9 +190,8 @@ const Conversations: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Urgency and Response Time Indicators */}
+                  {/* Status indicator only */}
                   <div className="flex items-center gap-2 mt-3">
-                    {getUrgencyIndicator(conversation.urgency, conversation.responseTime)}
                     {conversation.status === 'replied' && (
                       <div className="px-2 py-1 bg-green-500/10 border border-green-500/20 rounded-md">
                         <span className="text-xs text-green-400 font-medium">✓ Replied</span>
@@ -233,6 +214,9 @@ const Conversations: React.FC = () => {
             </button>
           </div>
         )}
+
+        {/* Detail panel */}
+        <ConversationDetail selectedThreadId={selectedThreadId} />
       </div>
 
       {/* Enhanced Empty State */}
