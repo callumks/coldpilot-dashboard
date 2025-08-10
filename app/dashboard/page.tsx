@@ -83,6 +83,12 @@ const DashboardContent: React.FC = () => {
   // Fetch dashboard data
   useEffect(() => {
     fetchDashboardData();
+    const listener = () => {
+      // Refresh KPIs shortly after sourcing completes
+      setTimeout(fetchDashboardData, 500);
+    };
+    window.addEventListener('lead-sourcing:done', listener as EventListener);
+    return () => window.removeEventListener('lead-sourcing:done', listener as EventListener);
   }, [selectedCampaign]);
 
   const fetchDashboardData = async () => {

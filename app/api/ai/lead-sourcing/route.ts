@@ -63,11 +63,9 @@ export async function POST(request: NextRequest) {
       userId: user.id
     });
 
-    return NextResponse.json({
-      success: true,
-      results: sourcingResults,
-      message: `Successfully sourced ${sourcingResults.leadsFound} leads`
-    });
+    // Notify UI it's done
+    try { (globalThis as any).__leadSourcingDone?.(); } catch {}
+    return NextResponse.json({ success: true, results: sourcingResults, message: `Successfully sourced ${sourcingResults.leadsFound} leads` });
 
   } catch (error) {
     console.error('AI Lead Sourcing error:', error);
