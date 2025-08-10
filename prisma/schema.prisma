@@ -275,14 +275,46 @@ model Message {
   sentAt         DateTime    @default(now())
   deliveredAt    DateTime?
   openedAt       DateTime?
-  emailMessageId String?     @unique // External email ID
+  emailMessageId String?     @unique // Legacy external email ID
+  // Inbox sync additions
+  source         MessageSource @default(CAMPAIGN)
+  provider       EmailProvider?
+  externalId     String?      // Provider message id
+  threadKey      String?
+  accountId      String?
+  receivedAt     DateTime?
   createdAt      DateTime    @default(now())
 
   // Relationships
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  account        ConnectedEmailAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
+  @@unique([provider, externalId])
   @@map("messages")
+}
+
+// Sync state per connected account
+model AccountSyncState {
+  id               String        @id @default(cuid())
+  userId           String
+  accountId        String        @unique
+  provider         EmailProvider
+  isFullSyncEnabled Boolean     @default(false)
+  excludedDomains  String[]     @default([])
+  lastGmailHistoryId String?
+  lastSyncedAt     DateTime?
+
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account          ConnectedEmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("account_sync_states")
+}
+
+enum MessageSource {
+  CAMPAIGN
+  MANUAL
+  IMPORTED
 }
 
 // Analytics model - for tracking performance metrics
