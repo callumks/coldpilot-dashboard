@@ -30,6 +30,30 @@ export async function GET(request: NextRequest) {
     
     if (result.success) {
       console.log('✅ Google OAuth completed successfully');
+      // Ensure AccountSyncState exists with default excluded domain
+      try {
+        const { prisma } = await import('../../../../../lib/prisma');
+        const appUser = await prisma.user.findUnique({ where: { clerkId: state } });
+        if (appUser && result.email) {
+          const account = await prisma.connectedEmailAccount.findFirst({ where: { userId: appUser.id, email: result.email } });
+          if (account) {
+            const domain = result.email.split('@')[1];
+            await prisma.accountSyncState.upsert({
+              where: { accountId: account.id },
+              update: {},
+              create: {
+                userId: appUser.id,
+                accountId: account.id,
+                provider: 'GMAIL',
+                isFullSyncEnabled: false,
+                excludedDomains: domain ? [domain] : []
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Could not initialize AccountSyncState (Gmail):', e);
+      }
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?success=google_connected&email=${encodeURIComponent(result.email || '')}`);
     } else {
       console.error('❌ Google OAuth failed:', result.error);

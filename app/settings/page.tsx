@@ -9,6 +9,11 @@ type ConnectedAccount = {
   id: string;
   email: string;
   provider: 'GMAIL' | 'OUTLOOK' | 'SMTP';
+  syncState?: {
+    isFullSyncEnabled: boolean;
+    excludedDomains: string[];
+    lastSyncedAt?: string | null;
+  } | null;
 };
 
 const Settings: React.FC = () => {
@@ -30,6 +35,8 @@ const Settings: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
+  const [pendingDomains, setPendingDomains] = useState<Record<string, string>>({});
+  const [isUpdatingSync, setIsUpdatingSync] = useState<Record<string, boolean>>({});
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
 
   const handleSaveChanges = async () => {
@@ -77,6 +84,11 @@ const Settings: React.FC = () => {
         if (!res.ok) return;
         const data = await res.json();
         setConnectedAccounts(data.accounts || []);
+        const map: Record<string, string> = {};
+        (data.accounts || []).forEach((a: ConnectedAccount) => {
+          map[a.id] = (a.syncState?.excludedDomains || []).join(',');
+        });
+        setPendingDomains(map);
       } catch (e) {
         console.error('Failed to load connected accounts', e);
       } finally {
@@ -85,6 +97,47 @@ const Settings: React.FC = () => {
     };
     loadAccounts();
   }, []);
+
+  const updateSyncSettings = async (accountId: string, updates: { isFullSyncEnabled?: boolean; excludedDomains?: string[] }) => {
+    setIsUpdatingSync(prev => ({ ...prev, [accountId]: true }));
+    try {
+      const res = await fetch('/api/settings/inbox-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId, ...updates })
+      });
+      if (!res.ok) throw new Error('Failed to update sync settings');
+      // refresh list
+      const ref = await fetch('/api/email-accounts', { cache: 'no-store' });
+      if (ref.ok) {
+        const data = await ref.json();
+        setConnectedAccounts(data.accounts || []);
+      }
+    } catch (e) {
+      console.error('Sync settings update failed', e);
+      alert('Failed to update sync settings');
+    } finally {
+      setIsUpdatingSync(prev => ({ ...prev, [accountId]: false }));
+    }
+  };
+
+  const runManualSync = async (accountId: string) => {
+    setIsUpdatingSync(prev => ({ ...prev, [accountId]: true }));
+    try {
+      const res = await fetch('/api/sync/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId })
+      });
+      if (!res.ok) throw new Error('Failed to run sync');
+      alert('Sync started. Refresh Conversations in a minute.');
+    } catch (e) {
+      console.error('Manual sync failed', e);
+      alert('Failed to run sync');
+    } finally {
+      setIsUpdatingSync(prev => ({ ...prev, [accountId]: false }));
+    }
+  };
 
   const hasGoogle = connectedAccounts.some(a => a.provider === 'GMAIL');
   const googleAccount = connectedAccounts.find(a => a.provider === 'GMAIL');
@@ -262,6 +315,34 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-green-400 text-sm flex items-center gap-1"><CheckCircle className="h-4 w-4"/> Connected</span>
+                  {/* Full Inbox Sync Controls */}
+                  <div className="flex items-center gap-2 text-xs text-gray-300">
+                    <span>Full Inbox Sync</span>
+                    <button
+                      onClick={() => updateSyncSettings(googleAccount!.id, { isFullSyncEnabled: !googleAccount?.syncState?.isFullSyncEnabled })}
+                      disabled={isUpdatingSync[googleAccount!.id]}
+                      className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${googleAccount?.syncState?.isFullSyncEnabled ? 'bg-green-500' : 'bg-gray-600'}`}
+                    >
+                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${googleAccount?.syncState?.isFullSyncEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  <input
+                    value={pendingDomains[googleAccount!.id] || ''}
+                    onChange={(e) => setPendingDomains(s => ({ ...s, [googleAccount!.id]: e.target.value }))}
+                    placeholder="excluded domains (comma-separated)"
+                    className="px-2 py-1 bg-[#1a1a1a] border border-gray-700 rounded text-xs text-gray-200"
+                    style={{ width: 240 }}
+                  />
+                  <button
+                    onClick={() => updateSyncSettings(googleAccount!.id, { excludedDomains: (pendingDomains[googleAccount!.id] || '').split(',').map(s => s.trim()).filter(Boolean) })}
+                    disabled={isUpdatingSync[googleAccount!.id]}
+                    className="text-blue-400 hover:text-blue-300 text-xs"
+                  >Save</button>
+                  <button
+                    onClick={() => runManualSync(googleAccount!.id)}
+                    disabled={isUpdatingSync[googleAccount!.id]}
+                    className="text-gray-300 hover:text-white text-xs"
+                  >Run Sync Now</button>
                   <button
                     onClick={async () => {
                       if (!googleAccount) return;
@@ -312,6 +393,34 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-green-400 text-sm flex items-center gap-1"><CheckCircle className="h-4 w-4"/> Connected</span>
+                  {/* Full Inbox Sync Controls */}
+                  <div className="flex items-center gap-2 text-xs text-gray-300">
+                    <span>Full Inbox Sync</span>
+                    <button
+                      onClick={() => updateSyncSettings(outlookAccount!.id, { isFullSyncEnabled: !outlookAccount?.syncState?.isFullSyncEnabled })}
+                      disabled={isUpdatingSync[outlookAccount!.id]}
+                      className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${outlookAccount?.syncState?.isFullSyncEnabled ? 'bg-green-500' : 'bg-gray-600'}`}
+                    >
+                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${outlookAccount?.syncState?.isFullSyncEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  <input
+                    value={pendingDomains[outlookAccount!.id] || ''}
+                    onChange={(e) => setPendingDomains(s => ({ ...s, [outlookAccount!.id]: e.target.value }))}
+                    placeholder="excluded domains (comma-separated)"
+                    className="px-2 py-1 bg-[#1a1a1a] border border-gray-700 rounded text-xs text-gray-200"
+                    style={{ width: 240 }}
+                  />
+                  <button
+                    onClick={() => updateSyncSettings(outlookAccount!.id, { excludedDomains: (pendingDomains[outlookAccount!.id] || '').split(',').map(s => s.trim()).filter(Boolean) })}
+                    disabled={isUpdatingSync[outlookAccount!.id]}
+                    className="text-blue-400 hover:text-blue-300 text-xs"
+                  >Save</button>
+                  <button
+                    onClick={() => runManualSync(outlookAccount!.id)}
+                    disabled={isUpdatingSync[outlookAccount!.id]}
+                    className="text-gray-300 hover:text-white text-xs"
+                  >Run Sync Now</button>
                   <button
                     onClick={async () => {
                       if (!outlookAccount) return;

@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
 
     const accounts = await prisma.connectedEmailAccount.findMany({
       where: { userId: appUser.id, isActive: true },
-      select: { id: true, email: true, provider: true }
+      select: { id: true, email: true, provider: true, syncState: { select: { isFullSyncEnabled: true, excludedDomains: true, lastSyncedAt: true } } }
     });
 
     return NextResponse.json({ accounts });

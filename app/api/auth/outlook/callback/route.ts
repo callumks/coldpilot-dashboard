@@ -28,6 +28,31 @@ export async function GET(request: NextRequest) {
 
     if (result.success) {
       console.log('✅ Microsoft OAuth completed successfully');
+      // Ensure AccountSyncState exists with default excluded domain
+      try {
+        const { prisma } = await import('../../../../../lib/prisma');
+        const { userId: clerkUserId } = { userId: state } as any;
+        const appUser = await prisma.user.findUnique({ where: { clerkId: state } });
+        if (appUser && result.email) {
+          const account = await (prisma as any).connectedEmailAccount.findFirst({ where: { userId: appUser.id, email: result.email } });
+          if (account) {
+            const domain = result.email.split('@')[1];
+            await prisma.accountSyncState.upsert({
+              where: { accountId: account.id },
+              update: {},
+              create: {
+                userId: appUser.id,
+                accountId: account.id,
+                provider: 'OUTLOOK',
+                isFullSyncEnabled: false,
+                excludedDomains: domain ? [domain] : []
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Could not initialize AccountSyncState:', e);
+      }
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?success=outlook_connected&email=${encodeURIComponent(result.email || '')}`);
     }
 
