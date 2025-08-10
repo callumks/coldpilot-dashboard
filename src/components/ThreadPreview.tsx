@@ -19,7 +19,7 @@ const ThreadPreview: React.FC<ThreadPreviewProps> = ({
   isUnread,
 }) => {
   return (
-    <div className={`p-3 rounded-lg transition-colors cursor-pointer border ${
+    <div className={`p-3 rounded-lg transition-colors cursor-pointer border min-w-0 ${
       isUnread 
         ? 'bg-gray-800 border-primary-500/30 shadow-card' 
         : 'bg-gray-850/50 border-gray-800 hover:bg-gray-800'
