@@ -34,12 +34,20 @@ export async function syncOutlook({ account, state, since }: { account: any; sta
 
       const source = isOutbound ? 'MANUAL' : 'IMPORTED';
 
+      // Try to resolve a matching contact by email
+      const prospect = isOutbound ? toList.find((e: string) => e !== account.email.toLowerCase()) : fromAddr;
+      let contact = prospect ? await prisma.contact.findFirst({ where: { userId: account.userId, email: prospect } }) : null;
+      if (!contact && prospect) {
+        contact = await prisma.contact.create({ data: { userId: account.userId, email: prospect, name: prospect, source: 'EMAIL', status: 'COLD' } as any });
+      }
+      if (!contact) continue;
+
       await prisma.message.create({
         data: {
           conversation: {
             connectOrCreate: {
               where: { id: `${account.userId}_${threadKey || externalId}` },
-              create: { id: `${account.userId}_${threadKey || externalId}`, userId: account.userId, contactId: '', subject: m.subject || 'Conversation', status: 'SENT', lastMessageAt: new Date(), unreadCount: 0 }
+              create: { id: `${account.userId}_${threadKey || externalId}`, userId: account.userId, contactId: contact.id, subject: m.subject || 'Conversation', status: 'SENT', lastMessageAt: new Date(), unreadCount: 0 }
             }
           },
           direction: direction as any,

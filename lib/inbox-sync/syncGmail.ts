@@ -1,6 +1,31 @@
 import { google } from 'googleapis';
 import { prisma } from '../prisma';
 
+function parseEmailAddress(value: string): { name?: string; email?: string } {
+  const match = value.match(/"?([^"<]*)"?\s*<([^>]+)>/);
+  if (match) return { name: match[1]?.trim(), email: match[2]?.trim().toLowerCase() };
+  const simple = value.trim().toLowerCase();
+  if (simple.includes('@')) return { email: simple };
+  return {};
+}
+
+async function resolveContactId(userId: string, headerFrom: string, headerTo: string, headerCc: string, userEmail: string, excluded: string[]) {
+  const parts = [headerFrom, headerTo, headerCc].join(',').split(',').map(s => s.trim()).filter(Boolean);
+  // choose first address that is not the user's and not excluded
+  for (const p of parts) {
+    const { email, name } = parseEmailAddress(p);
+    if (!email) continue;
+    if (email === userEmail.toLowerCase()) continue;
+    if (excluded.some(d => email.endsWith(`@${d}`))) continue;
+    let contact = await prisma.contact.findFirst({ where: { userId, email } });
+    if (!contact) {
+      contact = await prisma.contact.create({ data: { userId, email, name: name || email, source: 'EMAIL', status: 'COLD' } as any });
+    }
+    return { contactId: contact.id, prospectEmail: email };
+  }
+  return { contactId: null, prospectEmail: null } as any;
+}
+
 export async function syncGmail({ account, state, since }: { account: any; state: any; since: Date }) {
   const oauth2Client = await (await import('../auth/google-oauth')).getGoogleClientForAccount(account.id);
   const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
@@ -30,12 +55,15 @@ export async function syncGmail({ account, state, since }: { account: any; state
 
       const source = isOutbound ? 'MANUAL' : 'IMPORTED';
 
+      const { contactId } = await resolveContactId(account.userId, headers['From']||'', headers['To']||'', headers['Cc']||'', account.email, domains);
+      if (!contactId) continue; // cannot attach to a contact; skip for now
+
       await prisma.message.create({
         data: {
           conversation: {
             connectOrCreate: {
               where: { id: `${account.userId}_${threadKey || externalId}` },
-              create: { id: `${account.userId}_${threadKey || externalId}`, userId: account.userId, contactId: '', subject: headers['Subject'] || 'Conversation', status: 'SENT', lastMessageAt: new Date(), unreadCount: 0 }
+              create: { id: `${account.userId}_${threadKey || externalId}`, userId: account.userId, contactId: contactId, subject: headers['Subject'] || 'Conversation', status: 'SENT', lastMessageAt: new Date(), unreadCount: 0 }
             }
           },
           direction: direction as any,
