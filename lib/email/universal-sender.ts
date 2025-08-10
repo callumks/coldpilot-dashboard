@@ -59,14 +59,30 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
       const oauth2Client = await getGoogleClientForAccount(account.id);
       const gmail = (await import("googleapis")).google.gmail({ version: "v1", auth: oauth2Client });
 
-      const messageParts = [
+      const boundary = "mixed_" + Math.random().toString(36).slice(2);
+      const unsubscribe = `<mailto:unsubscribe@${new URL('https://'+(params.to.split('@')[1]||'example.com')).host}>`;
+      const textBody = body.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      const htmlBody = body;
+      const headers = [
         `To: ${toName ? `${toName} <${to}>` : to}`,
         `Subject: ${subject}`,
-        "Content-Type: text/html; charset=UTF-8",
         "MIME-Version: 1.0",
+        `List-Unsubscribe: ${unsubscribe}`,
+        `Reply-To: ${params.fromEmail || ''}`.trim(),
+        `Content-Type: multipart/alternative; boundary=${boundary}`,
         "",
-        body,
-      ];
+        `--${boundary}`,
+        "Content-Type: text/plain; charset=UTF-8",
+        "",
+        textBody,
+        `--${boundary}`,
+        "Content-Type: text/html; charset=UTF-8",
+        "",
+        htmlBody,
+        `--${boundary}--`
+      ].filter(Boolean);
+
+      const messageParts = headers;
       const raw = Buffer.from(messageParts.join("\n")).toString("base64").replace(/\+/g, "-").replace(/\//g, "_");
       await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
       return { success: true };
@@ -115,6 +131,10 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
             subject,
             body: { contentType: "HTML", content: body },
             toRecipients: [{ emailAddress: { address: to, name: toName } }],
+            replyTo: params.fromEmail ? [{ emailAddress: { address: params.fromEmail } }] : undefined,
+            internetMessageHeaders: [
+              { name: "List-Unsubscribe", value: `<mailto:unsubscribe@${(to.split('@')[1]||'example.com')}>` }
+            ]
           },
           saveToSentItems: true,
         }),

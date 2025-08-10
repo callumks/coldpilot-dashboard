@@ -127,14 +127,19 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Calculate change percentages (simplified - would need historical data for real calculations)
-    const calculateChange = (current: number) => {
-      // Simulate change calculation with random values for demo
-      const change = (Math.random() - 0.5) * 10; // -5% to +5%
-      return {
-        value: Math.round(change * 10) / 10,
-        trend: change >= 0 ? 'up' : 'down'
-      };
+    // Change calculation placeholder: compare to previous period totals
+    const prevStart = new Date(startDate);
+    const prevEnd = new Date(startDate);
+    prevStart.setDate(prevStart.getDate() - (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const prevCampaigns = await prisma.campaign.findMany({
+      where: { userId: user.id, createdAt: { gte: prevStart, lt: startDate } },
+      select: { emailsSent: true }
+    });
+    const prevSent = prevCampaigns.reduce((s, c) => s + c.emailsSent, 0);
+    const calcChange = (current: number, previous: number) => {
+      if (previous === 0) return { value: 0, trend: 'up' as const };
+      const pct = ((current - previous) / previous) * 100;
+      return { value: Math.round(pct * 10) / 10, trend: pct >= 0 ? 'up' as const : 'down' as const };
     };
 
     // Industry benchmarks
@@ -167,12 +172,12 @@ export async function GET(request: NextRequest) {
       : null;
 
     // Generate metrics with changes
-    const sentChange = calculateChange(totalSent);
-    const openRateChange = calculateChange(openRate);
-    const replyRateChange = calculateChange(replyRate);
-    const meetingRateChange = calculateChange(meetingRate);
-    const responseTimeChange = calculateChange(avgResponseTime);
-    const campaignsChange = calculateChange(activeCampaigns);
+    const sentChange = calcChange(totalSent, prevSent);
+    const openRateChange = { value: 0, trend: 'up' as const }; // historical needed
+    const replyRateChange = { value: 0, trend: 'up' as const };
+    const meetingRateChange = { value: 0, trend: 'up' as const };
+    const responseTimeChange = { value: 0, trend: 'down' as const };
+    const campaignsChange = { value: 0, trend: 'up' as const };
 
     console.log('✅ Analytics calculated');
 

@@ -238,11 +238,28 @@ async function callOpenAIAPI(prompt: string) {
       throw new Error('No content received from OpenAI');
     }
 
-    // Parse the JSON response
+    // Parse the JSON response (robust to code fences / extra text)
     try {
-      const parsedResponse = JSON.parse(content);
-      console.log('✅ Successfully generated AI email content');
-      return parsedResponse;
+      const cleaned = content
+        .trim()
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/```\s*$/i, '');
+      // Attempt direct parse
+      try {
+        const parsed = JSON.parse(cleaned);
+        console.log('✅ Successfully generated AI email content');
+        return parsed;
+      } catch {
+        // Fallback: extract first JSON block via regex
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          console.log('✅ Parsed AI email content from embedded JSON');
+          return parsed;
+        }
+        throw new Error('No JSON found in response');
+      }
     } catch (parseError) {
       console.error('Failed to parse OpenAI response as JSON:', content);
       throw new Error('Invalid JSON response from OpenAI');
