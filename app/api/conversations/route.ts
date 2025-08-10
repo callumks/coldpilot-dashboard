@@ -44,6 +44,10 @@ export async function GET(request: NextRequest) {
     // Build filter conditions
     const whereConditions: any = {
       userId: user.id,
+      // Only show conversations linked to user-managed contacts (exclude contacts auto-created by inbox sync)
+      contact: {
+        source: { not: 'EMAIL' }
+      }
     };
 
     // Add search filter

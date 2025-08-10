@@ -56,8 +56,19 @@ export async function syncGmail({ account, state, since }: { account: any; state
 
       const source = isOutbound ? 'MANUAL' : 'IMPORTED';
 
-      const { contactId } = await resolveContactId(account.userId, headers['From']||'', headers['To']||'', headers['Cc']||'', account.email, domains);
-      if (!contactId) continue; // cannot attach to a contact; skip for now
+      const { contactId } = await (async () => {
+        // Only match existing contacts; do not auto-create
+        const parts = [headers['From']||'', headers['To']||'', headers['Cc']||''].join(',').split(',').map(s => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          const { email } = parseEmailAddress(p);
+          if (!email) continue;
+          if (email.toLowerCase() === account.email.toLowerCase()) continue;
+          const found = await prisma.contact.findFirst({ where: { userId: account.userId, email: email.toLowerCase() } });
+          if (found) return { contactId: found.id } as any;
+        }
+        return { contactId: null } as any;
+      })();
+      if (!contactId) continue; // skip threads not tied to an existing contact
 
       await prisma.message.create({
         data: {

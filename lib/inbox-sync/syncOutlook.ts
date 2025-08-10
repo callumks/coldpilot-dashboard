@@ -96,12 +96,9 @@ export async function syncOutlook({ account, state, since }: { account: any; sta
 
       const source = isOutbound ? 'MANUAL' : 'IMPORTED';
 
-      // Try to resolve a matching contact by email
+      // Only attach to existing contacts; skip if not found
       const prospect = isOutbound ? toList.find((e: string) => e !== account.email.toLowerCase()) : fromAddr;
-      let contact = prospect ? await prisma.contact.findFirst({ where: { userId: account.userId, email: prospect } }) : null;
-      if (!contact && prospect) {
-        contact = await prisma.contact.create({ data: { userId: account.userId, email: prospect, name: prospect, source: 'EMAIL', status: 'COLD' } as any });
-      }
+      const contact = prospect ? await prisma.contact.findFirst({ where: { userId: account.userId, email: prospect } }) : null;
       if (!contact) continue;
 
       await prisma.message.create({
