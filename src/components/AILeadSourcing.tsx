@@ -50,18 +50,28 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
     setError(null);
     setResults(null);
     try {
-      // Fire-and-forget kickoff
-      fetch('/api/ai/lead-sourcing', {
+      // Fire-and-forget kickoff, and signal completion when response returns
+      const promise = fetch('/api/ai/lead-sourcing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
           jobTitles: formData.jobTitles.filter(title => title.trim())
         })
-      }).catch(() => {});
+      })
+        .then(async (res) => {
+          // Drain body to allow connection reuse
+          try { await res.json(); } catch {}
+          window.dispatchEvent(new CustomEvent('lead-sourcing:done'));
+        })
+        .catch(() => {
+          window.dispatchEvent(new CustomEvent('lead-sourcing:done'));
+        });
       // Close modal immediately and show global indicator
       setIsOpen(false);
       window.dispatchEvent(new CustomEvent('lead-sourcing:start'));
+      // Failsafe: auto-complete after 3 minutes if no signal
+      setTimeout(() => window.dispatchEvent(new CustomEvent('lead-sourcing:done')), 3 * 60 * 1000);
     } catch (err) {
       console.error('AI Lead Sourcing error:', err);
       setError(err instanceof Error ? err.message : 'Failed to source leads');
