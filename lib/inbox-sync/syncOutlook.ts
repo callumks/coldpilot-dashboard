@@ -1,22 +1,83 @@
 import { prisma } from '../prisma';
-import { createMicrosoftMSALClient } from '../auth/outlook-oauth';
+import { createMicrosoftMSALClient, OUTLOOK_SCOPES } from '../auth/outlook-oauth';
 
 export async function syncOutlook({ account, state, since }: { account: any; state: any; since: Date }) {
   const msal = createMicrosoftMSALClient();
-  // Use stored token (silent refresh handled in sender path normally)
-  const accessToken = account.accessToken;
+
+  async function getFreshAccessToken(): Promise<string> {
+    let token = account.accessToken as string | undefined;
+    const isExpired = !account.expiresAt || new Date(account.expiresAt) <= new Date(Date.now() + 2 * 60 * 1000);
+    if (!isExpired && token) return token;
+
+    if (account.msalCache) {
+      try {
+        msal.getTokenCache().deserialize(account.msalCache);
+        const accounts = await msal.getTokenCache().getAllAccounts();
+        const msalAccount = accounts.find(a => a.homeAccountId === account.msalHomeAccountId) || accounts[0];
+        if (msalAccount) {
+          const silent = await msal.acquireTokenSilent({ account: msalAccount, scopes: OUTLOOK_SCOPES, forceRefresh: true });
+          token = silent.accessToken;
+          await (prisma as any).connectedEmailAccount.update({
+            where: { id: account.id },
+            data: {
+              accessToken: token,
+              expiresAt: silent.expiresOn || new Date(Date.now() + 3600 * 1000),
+              msalCache: msal.getTokenCache().serialize(),
+            }
+          });
+          return token!;
+        }
+      } catch (e) {
+        console.warn('Outlook sync: silent refresh failed; proceeding with existing token');
+      }
+    }
+    return token as string;
+  }
+
+  async function graphGet(path: string): Promise<Response> {
+    const token = await getFreshAccessToken();
+    let res = await fetch(`https://graph.microsoft.com/v1.0${path}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 401 && account.msalCache) {
+      // try silent refresh once
+      try {
+        msal.getTokenCache().deserialize(account.msalCache);
+        const accounts = await msal.getTokenCache().getAllAccounts();
+        const msalAccount = accounts.find(a => a.homeAccountId === account.msalHomeAccountId) || accounts[0];
+        if (msalAccount) {
+          const silent = await msal.acquireTokenSilent({ account: msalAccount, scopes: OUTLOOK_SCOPES, forceRefresh: true });
+          const newToken = silent.accessToken;
+          await (prisma as any).connectedEmailAccount.update({
+            where: { id: account.id },
+            data: {
+              accessToken: newToken,
+              expiresAt: silent.expiresOn || new Date(Date.now() + 3600 * 1000),
+              msalCache: msal.getTokenCache().serialize(),
+            }
+          });
+          res = await fetch(`https://graph.microsoft.com/v1.0${path}`, { headers: { Authorization: `Bearer ${newToken}` } });
+        }
+      } catch {}
+    }
+    return res;
+  }
+
   const isoSince = since.toISOString();
 
-  const headers = { Authorization: `Bearer ${accessToken}` } as any;
+  // Use sentDateTime for SentItems, receivedDateTime for Inbox
   const endpoints = [
-    `/me/mailFolders/SentItems/messages?$select=id,subject,conversationId,receivedDateTime,sentDateTime,from,toRecipients&$top=50&$filter=receivedDateTime ge ${isoSince}`,
-    `/me/mailFolders/Inbox/messages?$select=id,subject,conversationId,receivedDateTime,sentDateTime,from,toRecipients&$top=50&$filter=receivedDateTime ge ${isoSince}`
+    `/me/mailFolders/SentItems/messages?$select=id,subject,conversationId,receivedDateTime,sentDateTime,from,toRecipients&$top=100&$filter=sentDateTime ge ${isoSince}`,
+    `/me/mailFolders/Inbox/messages?$select=id,subject,conversationId,receivedDateTime,sentDateTime,from,toRecipients&$top=100&$filter=receivedDateTime ge ${isoSince}`
   ];
 
   let imported = 0;
+  const errors: any[] = [];
   for (const ep of endpoints) {
-    const res = await fetch(`https://graph.microsoft.com/v1.0${ep}`, { headers });
-    if (!res.ok) continue;
+    const res = await graphGet(ep);
+    if (!res.ok) {
+      const text = await res.text();
+      errors.push({ endpoint: ep, status: res.status, body: text });
+      continue;
+    }
     const data = await res.json();
     for (const m of data.value || []) {
       const externalId = m.id;
@@ -64,6 +125,6 @@ export async function syncOutlook({ account, state, since }: { account: any; sta
       imported++;
     }
   }
-  return { imported };
+  return { imported, errors };
 }
 
