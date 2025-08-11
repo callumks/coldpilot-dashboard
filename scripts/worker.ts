@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Worker, Queue, JobsOptions, QueueScheduler } from 'bullmq';
+import { Worker, Queue, JobsOptions } from 'bullmq';
 import IORedis from 'ioredis';
 import { prisma } from '../lib/prisma';
 import universalSender from '../lib/email/universal-sender';
@@ -7,8 +7,7 @@ import universalSender from '../lib/email/universal-sender';
 const connection = new IORedis(process.env.REDIS_URL!);
 const QUEUE_NAME = process.env.QUEUE_NAME || 'campaign_step_send';
 
-// Ensure scheduler for delayed jobs
-new QueueScheduler(QUEUE_NAME, { connection });
+// BullMQ v5 no longer requires a separate QueueScheduler for delayed jobs
 
 export type SendJob = {
   traceId: string;
