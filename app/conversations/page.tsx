@@ -135,7 +135,7 @@ const Conversations: React.FC = () => {
       {/* Split view: list left, detail right */}
       <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] h-[70vh]">
         {/* Left column: conversations list with its own scroller */}
-        <div className="min-w-0 overflow-y-auto overflow-x-hidden">
+        <div className="min-w-0 overflow-y-auto overflow-x-hidden pr-2">
         {loading ? (
           <div className="p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
@@ -159,13 +159,13 @@ const Conversations: React.FC = () => {
               <div 
                 key={conversation.id}
                 onClick={() => setSelectedThreadId(conversation.id)}
-                className={`transition-all duration-200 cursor-pointer ${
+                className={`transition-all duration-200 cursor-pointer min-w-0 ${
                   selectedThreadId === conversation.id
                     ? 'bg-blue-500/10 border-l-4 border-blue-500'
                     : 'hover:bg-white/[0.02]'
                 }`}
               >
-                <div className="p-4">
+                <div className="p-4 min-w-0">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <ThreadPreview 
@@ -218,8 +218,9 @@ const Conversations: React.FC = () => {
         )}
         </div>
         {/* Right column: detail has its own internal scroller */}
-        {/* Detail panel */}
-        <ConversationDetail selectedThreadId={selectedThreadId} />
+        <div className="min-w-0 overflow-hidden">
+          <ConversationDetail selectedThreadId={selectedThreadId} />
+        </div>
       </div>
 
       {/* Enhanced Empty State */}

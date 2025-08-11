@@ -24,7 +24,7 @@ const ThreadPreview: React.FC<ThreadPreviewProps> = ({
         ? 'bg-gray-800 border-primary-500/30 shadow-card' 
         : 'bg-gray-850/50 border-gray-800 hover:bg-gray-800'
     }`}>
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between min-w-0">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 min-w-0">
             <h4 className={`text-sm font-medium truncate ${
@@ -45,7 +45,7 @@ const ThreadPreview: React.FC<ThreadPreviewProps> = ({
             {subject}
           </p>
           
-          <p className="text-xs text-gray-500 truncate break-words line-clamp-2">
+          <p className="text-xs text-gray-500 break-words line-clamp-2">
             {preview}
           </p>
         </div>
