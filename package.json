@@ -9,6 +9,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "worker": "node dist/scripts/worker.js",
     "lint": "next lint",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
@@ -26,7 +27,9 @@
     "@prisma/client": "^6.13.0",
     "@types/multer": "^2.0.0",
     "@types/papaparse": "^5.3.16",
+    "bullmq": "^5.56.10",
     "googleapis": "^155.0.0",
+    "ioredis": "^5.7.0",
     "lucide-react": "^0.535.0",
     "multer": "^2.0.2",
     "next": "^14.0.0",
@@ -41,6 +44,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@tailwindcss/line-clamp": "^0.4.4",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
