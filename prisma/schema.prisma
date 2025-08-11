@@ -263,6 +263,7 @@ model Conversation {
   campaignId String?
   campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   messages   Message[]
+  intent     ConversationIntent?
 
   @@map("conversations")
 }
@@ -281,6 +282,8 @@ model Message {
   source         String?       @default("CAMPAIGN")
   provider       String?
   externalId     String?      // Provider message id
+  inReplyToId    String?
+  referencesIds  String[]
   threadKey      String?
   accountId      String?
   receivedAt     DateTime?
@@ -293,6 +296,48 @@ model Message {
 
   @@unique([provider, externalId])
   @@map("messages")
+}
+
+enum ConversationIntent {
+  BOOKABLE
+  INTERESTED
+  NOT_NOW
+  OOTO
+  OPTOUT
+  OTHER
+}
+
+enum MessageIntent {
+  BOOKABLE
+  INTERESTED
+  NOT_NOW
+  OOTO
+  OPTOUT
+  OTHER
+}
+
+model SendAttempt {
+  id          String   @id @default(cuid())
+  campaignId  String
+  contactId   String
+  stepNumber  Int
+  createdAt   DateTime @default(now())
+  messageId   String?
+
+  @@unique([campaignId, contactId, stepNumber])
+  @@map("send_attempts")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
 }
 
 // Sync state per connected account
