@@ -97,10 +97,66 @@ const Campaigns: React.FC = () => {
     fetchCampaigns();
   };
 
-  const handleCampaignAction = (campaignId: string, action: string) => {
-    console.log(`Campaign ${campaignId} action: ${action}`);
-    // Implement campaign actions (play, pause, edit, delete, etc.)
-    alert(`${action} action for campaign ${campaignId} - Coming soon!`);
+  const handleCampaignAction = async (campaignId: string, action: string) => {
+    try {
+      if (action === 'pause') {
+        await fetch('/api/campaigns', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaignId, status: 'PAUSED' }) });
+        await fetchCampaigns();
+        return;
+      }
+      if (action === 'resume') {
+        await fetch('/api/campaigns', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaignId, status: 'ACTIVE' }) });
+        await fetchCampaigns();
+        return;
+      }
+      if (action === 'launch') {
+        await fetch('/api/campaigns', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaignId, status: 'ACTIVE' }) });
+        await fetchCampaigns();
+        return;
+      }
+      if (action === 'analytics') {
+        window.location.href = `/analytics?campaignId=${campaignId}`;
+        return;
+      }
+      if (action === 'edit') {
+        // Open wizard prefilled: simple approach — store selected campaign in state and pass as prop
+        const selected = campaigns.find(c => c.id === campaignId);
+        if (selected) {
+          (window as any).__editCampaign = selected; // lightweight handoff
+          setShowCreateWizard(true);
+        }
+        return;
+      }
+      if (action === 'duplicate') {
+        const original = campaigns.find(c => c.id === campaignId);
+        if (!original) return;
+        const payload = {
+          name: `${original.name} (Copy)`,
+          description: original.description || '',
+          channel: 'EMAIL',
+          targetTags: [],
+          minLeadScore: '',
+          excludePrevious: true,
+          dailySendLimit: 100,
+          sendingWindow: { start: '09:00', end: '17:00', weekdaysOnly: true },
+          timezone: 'UTC',
+          steps: [
+            { stepNumber: 1, name: 'Initial Outreach', delayDays: 0, isActive: true, subject: 'Hello', body: 'Following up on...' }
+          ]
+        };
+        const res = await fetch('/api/campaigns/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error('Duplicate failed');
+        await fetchCampaigns();
+        return;
+      }
+      if (action === 'delete') {
+        await fetch(`/api/campaigns?id=${campaignId}`, { method: 'DELETE' });
+        await fetchCampaigns();
+        return;
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
+    }
   };
 
   const totalStats = {
@@ -353,12 +409,13 @@ const Campaigns: React.FC = () => {
                             <Copy className="h-4 w-4" />
                           </button>
                           
-                          <div className="relative group">
-                            <button className="p-2 hover:bg-gray-500/10 text-gray-400 hover:text-gray-300 rounded-lg transition-all">
-                              <MoreVertical className="h-4 w-4" />
-                            </button>
-                            {/* Dropdown menu would go here */}
-                          </div>
+                          <button
+                            onClick={() => handleCampaignAction(campaign.id, 'delete')}
+                            className="p-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 rounded-lg transition-all"
+                            title="Delete campaign"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>

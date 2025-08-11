@@ -97,6 +97,18 @@ const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
     testEmail: ''
   });
 
+  // Prefill name/description when invoked from Edit
+  useEffect(() => {
+    const existing: any = (window as any).__editCampaign;
+    if (existing && existing.id) {
+      setFormData(prev => ({
+        ...prev,
+        name: existing.name || prev.name,
+        description: existing.description || prev.description,
+      }));
+    }
+  }, []);
+
   // Mock contact tags for targeting
   const availableTags = [
     'Tech', 'SaaS', 'Startup', 'Enterprise', 'Founder', 'CEO', 'CTO', 'VP Sales',
