@@ -168,15 +168,23 @@ class CampaignEngine {
           continue;
         }
 
-        // Send the email
-        const sent = await this.sendCampaignEmail(campaign, contact, nextStep);
+       // Enqueue the email via queue worker
+       try {
+         const { enqueueSend } = await import('../scripts/setup-queue');
+         await enqueueSend({ campaignId: campaign.id, contactId: contact.id, stepNumber: nextStep.stepNumber, fromAccountId: (campaign as any).fromAccountId });
+       } catch (e) {
+         console.error('Queue enqueue failed, falling back to direct send', e);
+         const sent = await this.sendCampaignEmail(campaign, contact, nextStep);
+         if (sent) {
+           emailsSentToday++;
+         }
+         await new Promise(resolve => setTimeout(resolve, 1000));
+         continue;
+       }
         
-        if (sent) {
-          emailsSentToday++;
-        }
+       emailsSentToday++;
 
-        // Add small delay between emails to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 1000));
+       // Queue-based throttling; no local delay needed
       }
 
       // Update campaign statistics
