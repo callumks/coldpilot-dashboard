@@ -39,13 +39,13 @@ const ThreadPreview: React.FC<ThreadPreviewProps> = ({
             )}
           </div>
           
-          <p className={`text-sm truncate mb-1 ${
+          <p className={`text-sm truncate line-clamp-1 mb-1 ${
             isUnread ? 'text-gray-200 font-medium' : 'text-gray-400'
           }`}>
             {subject}
           </p>
           
-          <p className="text-xs text-gray-500 truncate break-words">
+          <p className="text-xs text-gray-500 truncate break-words line-clamp-2">
             {preview}
           </p>
         </div>

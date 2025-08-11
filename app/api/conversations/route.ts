@@ -125,13 +125,16 @@ export async function GET(request: NextRequest) {
       conversations: conversations.map(conversation => {
         const lastMessage = conversation.messages[0];
         const responseTime = calculateResponseTime(conversation.lastMessageAt);
+        const previewRaw = conversation.preview || lastMessage?.content || '';
+        const previewClean = (previewRaw || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+        const previewClamped = previewClean ? (previewClean.length > 180 ? previewClean.substring(0, 180) + '...' : previewClean) : 'No message content';
         
         return {
           id: conversation.id,
           recipientName: conversation.contact.name,
           recipientCompany: conversation.contact.company || 'Unknown Company',
           recipientEmail: conversation.contact.email,
-          lastMessage: conversation.preview || (lastMessage?.content.substring(0, 150) + '...' || 'No message content'),
+          lastMessage: previewClamped,
           timestamp: formatTimeAgo(conversation.lastMessageAt),
           status: mapConversationStatus(conversation.status, lastMessage?.direction),
           unreadCount: conversation.unreadCount,
