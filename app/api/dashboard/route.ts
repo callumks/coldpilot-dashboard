@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
+import { getCurrentUser } from '../../../lib/auth';
 import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -22,10 +23,8 @@ export async function GET(request: NextRequest) {
 
     console.log('👤 User authenticated:', userId);
 
-    // Get the user from database
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    });
+    // Ensure user exists in DB (auto-create on first access)
+    const user = await getCurrentUser();
 
     if (!user) {
       console.log('❌ User not found in database');

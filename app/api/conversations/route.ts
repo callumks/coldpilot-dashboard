@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
+import { getCurrentUser } from '../../../lib/auth';
 import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -22,10 +23,8 @@ export async function GET(request: NextRequest) {
 
     console.log('👤 User authenticated:', userId);
 
-    // Get the user from database
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    });
+    // Ensure user exists in DB (auto-create on first access)
+    const user = await getCurrentUser();
 
     if (!user) {
       console.log('❌ User not found in database');
@@ -125,16 +124,13 @@ export async function GET(request: NextRequest) {
       conversations: conversations.map(conversation => {
         const lastMessage = conversation.messages[0];
         const responseTime = calculateResponseTime(conversation.lastMessageAt);
-        const previewRaw = conversation.preview || lastMessage?.content || '';
-        const previewClean = (previewRaw || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
-        const previewClamped = previewClean ? (previewClean.length > 180 ? previewClean.substring(0, 180) + '...' : previewClean) : 'No message content';
         
         return {
           id: conversation.id,
           recipientName: conversation.contact.name,
           recipientCompany: conversation.contact.company || 'Unknown Company',
           recipientEmail: conversation.contact.email,
-          lastMessage: previewClamped,
+          lastMessage: conversation.preview || (lastMessage?.content.substring(0, 150) + '...' || 'No message content'),
           timestamp: formatTimeAgo(conversation.lastMessageAt),
           status: mapConversationStatus(conversation.status, lastMessage?.direction),
           unreadCount: conversation.unreadCount,
