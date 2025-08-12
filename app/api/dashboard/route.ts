@@ -142,16 +142,21 @@ export async function GET(request: NextRequest) {
           description: 'Total email replies received. A slight decrease is normal as campaigns mature.'
         }
       },
-      recentConversations: recentConversations.map(conversation => ({
-        id: conversation.id,
-        sender: conversation.contact.name,
-        company: conversation.contact.company || 'Unknown Company',
-        subject: conversation.subject,
-        preview: conversation.preview || (conversation.messages[0]?.content.substring(0, 100) + '...' || 'No preview available'),
-        time: formatTimeAgo(conversation.lastMessageAt),
-        isUnread: conversation.unreadCount > 0,
-        status: getConversationStatus(conversation.status, conversation.messages[0]?.direction)
-      })),
+      recentConversations: recentConversations.map(conversation => {
+        const lastMessageContent = conversation.messages?.[0]?.content || '';
+        const preview = conversation.preview || (lastMessageContent ? `${lastMessageContent.substring(0, 100)}...` : 'No preview available');
+
+        return {
+          id: conversation.id,
+          sender: conversation.contact.name,
+          company: conversation.contact.company || 'Unknown Company',
+          subject: conversation.subject,
+          preview,
+          time: formatTimeAgo(conversation.lastMessageAt),
+          isUnread: conversation.unreadCount > 0,
+          status: getConversationStatus(conversation.status, conversation.messages?.[0]?.direction)
+        };
+      }),
       campaigns: allCampaigns.map(campaign => ({
         id: campaign.id,
         name: campaign.name,
