@@ -421,7 +421,7 @@ const Contacts: React.FC = () => {
                         onMessage={handleMessageContact}
                         onDelete={(contactId: string) => handleDeleteContact(contactId)}
                         onMarkContacted={(contactId: string) => handleMarkContacted(contactId)}
-                        isVisible={hoveredContactId === contact.id}
+                        isVisible={true}
                       />
                     </td>
                   </tr>

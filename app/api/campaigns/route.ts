@@ -99,7 +99,50 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PATCH /api/campaigns - Update campaign status or fields
+// Helper: Backfill campaign_contacts for a campaign based on user's contacts
+async function backfillCampaignAudience(campaignId: string) {
+  const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+  if (!campaign) return { added: 0 };
+
+  // Build contact filter
+  const where: any = { userId: campaign.userId };
+  if (campaign.targetTags && campaign.targetTags.length > 0) {
+    where.tags = { hasSome: campaign.targetTags };
+  }
+
+  // Exclude contacts with prior conversations if excludePrevious=true
+  let candidateContacts = await prisma.contact.findMany({ where, select: { id: true } });
+  if (campaign.excludePrevious) {
+    const contactIds = candidateContacts.map(c => c.id);
+    if (contactIds.length > 0) {
+      const prior = await prisma.conversation.findMany({ where: { contactId: { in: contactIds }, userId: campaign.userId }, select: { contactId: true } });
+      const excluded = new Set(prior.map(p => p.contactId));
+      candidateContacts = candidateContacts.filter(c => !excluded.has(c.id));
+    }
+  }
+
+  if (candidateContacts.length === 0) return { added: 0 };
+
+  // Remove already assigned
+  const already = await prisma.campaignContact.findMany({ where: { campaignId }, select: { contactId: true } });
+  const assigned = new Set(already.map(a => a.contactId));
+  const toAssign = candidateContacts.filter(c => !assigned.has(c.id));
+
+  if (toAssign.length === 0) return { added: 0 };
+
+  const res = await prisma.campaignContact.createMany({
+    data: toAssign.map(c => ({ campaignId, contactId: c.id })),
+    skipDuplicates: true,
+  });
+
+  // Optionally refresh totalContacts
+  const total = await prisma.campaignContact.count({ where: { campaignId } });
+  await prisma.campaign.update({ where: { id: campaignId }, data: { totalContacts: total } });
+
+  return { added: res.count };
+}
+
+// PATCH /api/campaigns - Update campaign fields (status/name/description) and backfill audience on activation
 export async function PATCH(request: NextRequest) {
   try {
     const { userId } = await auth();
@@ -111,9 +154,8 @@ export async function PATCH(request: NextRequest) {
     const { id, status, name, description } = body || {};
     if (!id) return NextResponse.json({ error: 'Missing campaign id' }, { status: 400 });
 
-    // Only allow updating owned campaign
-    const campaign = await prisma.campaign.findFirst({ where: { id, userId: user.id } });
-    if (!campaign) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const existing = await prisma.campaign.findFirst({ where: { id, userId: user.id } });
+    if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const updated = await prisma.campaign.update({
       where: { id },
@@ -121,27 +163,39 @@ export async function PATCH(request: NextRequest) {
         ...(status ? { status } : {}),
         ...(typeof name === 'string' ? { name } : {}),
         ...(typeof description === 'string' ? { description } : {}),
-      }
+      },
     });
-    return NextResponse.json({ success: true, campaign: { id: updated.id, status: updated.status, name: updated.name, description: updated.description } });
+
+    let backfill: { added: number } | undefined;
+    if (status === 'ACTIVE') {
+      const count = await prisma.campaignContact.count({ where: { campaignId: id } });
+      if (count === 0) {
+        backfill = await backfillCampaignAudience(id);
+      }
+    }
+
+    return NextResponse.json({ success: true, campaign: { id: updated.id, status: updated.status, name: updated.name, description: updated.description }, backfill });
   } catch (error) {
     console.error('💥 Update campaign error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// DELETE /api/campaigns?id=... - Delete campaign
+// DELETE /api/campaigns?id=... - Delete a campaign
 export async function DELETE(request: NextRequest) {
   try {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const user = await prisma.user.findUnique({ where: { clerkId: userId } });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
     const existing = await prisma.campaign.findFirst({ where: { id, userId: user.id } });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
     await prisma.campaign.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {

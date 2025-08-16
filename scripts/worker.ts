@@ -4,7 +4,15 @@ import IORedis from 'ioredis';
 import { prisma } from '../lib/prisma';
 import universalSender from '../lib/email/universal-sender';
 
-const connection = new IORedis(process.env.REDIS_URL!);
+const connection = new IORedis(process.env.REDIS_URL!, {
+  // Required by BullMQ v5
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  // Improve stability on ephemeral networks
+  connectTimeout: 20000,
+  keepAlive: 10000,
+  tls: process.env.REDIS_URL?.startsWith('rediss://') ? {} : undefined,
+});
 const QUEUE_NAME = process.env.QUEUE_NAME || 'campaign_step_send';
 
 // BullMQ v5 no longer requires a separate QueueScheduler for delayed jobs
@@ -66,7 +74,7 @@ export const worker = new Worker<SendJob>(
 
     // Idempotency via SendAttempt unique
     try {
-      await prisma.sendAttempt.create({ data: { campaignId, contactId, stepNumber } });
+      await (prisma as any).sendAttempt.create({ data: { campaignId, contactId, stepNumber } });
     } catch {
       return; // already attempted
     }

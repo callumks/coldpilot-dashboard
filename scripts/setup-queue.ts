@@ -11,7 +11,13 @@ export type SendJob = {
   fromAccountId?: string;
 };
 
-const connection = new IORedis(process.env.REDIS_URL!);
+const connection = new IORedis(process.env.REDIS_URL!, {
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  connectTimeout: 20000,
+  keepAlive: 10000,
+  tls: process.env.REDIS_URL?.startsWith('rediss://') ? {} : undefined,
+});
 const QUEUE_NAME = process.env.QUEUE_NAME || 'campaign_step_send';
 
 export const sendQueue = new Queue<SendJob>(QUEUE_NAME, { connection });
