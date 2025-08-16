@@ -97,10 +97,39 @@ const Campaigns: React.FC = () => {
     fetchCampaigns();
   };
 
-  const handleCampaignAction = (campaignId: string, action: string) => {
-    console.log(`Campaign ${campaignId} action: ${action}`);
-    // Implement campaign actions (play, pause, edit, delete, etc.)
-    alert(`${action} action for campaign ${campaignId} - Coming soon!`);
+  const handleCampaignAction = async (campaignId: string, action: string) => {
+    try {
+      if (action === 'pause') {
+        const res = await fetch('/api/campaigns', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaignId, status: 'PAUSED' }) });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({} as any)))?.error || 'Pause failed');
+        await fetchCampaigns();
+        return;
+      }
+      if (action === 'resume') {
+        const res = await fetch('/api/campaigns', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaignId, status: 'ACTIVE' }) });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({} as any)))?.error || 'Resume failed');
+        await fetchCampaigns();
+        return;
+      }
+      if (action === 'launch') {
+        const res = await fetch('/api/campaigns', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaignId, status: 'ACTIVE' }) });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({} as any)))?.error || 'Launch failed');
+        await fetchCampaigns();
+        return;
+      }
+      if (action === 'analytics') {
+        window.location.href = `/analytics?campaignId=${campaignId}`;
+        return;
+      }
+      if (action === 'delete') {
+        const res = await fetch(`/api/campaigns?id=${campaignId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({} as any)))?.error || 'Delete failed');
+        await fetchCampaigns();
+        return;
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Action failed');
+    }
   };
 
   const totalStats = {
