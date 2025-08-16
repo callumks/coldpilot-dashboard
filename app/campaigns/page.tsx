@@ -117,6 +117,36 @@ const Campaigns: React.FC = () => {
         await fetchCampaigns();
         return;
       }
+      if (action === 'edit') {
+        const selected = campaigns.find(c => c.id === campaignId);
+        if (selected) {
+          (window as any).__editCampaign = selected;
+          setShowCreateWizard(true);
+        }
+        return;
+      }
+      if (action === 'duplicate') {
+        const original = campaigns.find(c => c.id === campaignId);
+        if (!original) throw new Error('Original campaign not found');
+        const payload = {
+          name: `${original.name} (Copy)`,
+          description: original.description || '',
+          channel: 'EMAIL',
+          targetTags: [],
+          minLeadScore: '',
+          excludePrevious: true,
+          dailySendLimit: 100,
+          sendingWindow: { start: '09:00', end: '17:00', weekdaysOnly: true },
+          timezone: 'UTC',
+          steps: [
+            { stepNumber: 1, name: 'Initial Outreach', delayDays: 0, isActive: true, subject: 'Hello', body: 'Following up on...' }
+          ]
+        };
+        const res = await fetch('/api/campaigns/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({} as any)))?.error || 'Duplicate failed');
+        await fetchCampaigns();
+        return;
+      }
       if (action === 'analytics') {
         window.location.href = `/analytics?campaignId=${campaignId}`;
         return;
