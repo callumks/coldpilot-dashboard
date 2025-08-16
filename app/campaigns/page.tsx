@@ -152,6 +152,8 @@ const Campaigns: React.FC = () => {
         return;
       }
       if (action === 'delete') {
+        const confirmDelete = window.confirm('Delete this campaign? This cannot be undone.');
+        if (!confirmDelete) return;
         const res = await fetch(`/api/campaigns?id=${campaignId}`, { method: 'DELETE' });
         if (!res.ok) throw new Error((await res.json().catch(() => ({} as any)))?.error || 'Delete failed');
         await fetchCampaigns();
@@ -412,12 +414,13 @@ const Campaigns: React.FC = () => {
                             <Copy className="h-4 w-4" />
                           </button>
                           
-                          <div className="relative group">
-                            <button className="p-2 hover:bg-gray-500/10 text-gray-400 hover:text-gray-300 rounded-lg transition-all">
-                              <MoreVertical className="h-4 w-4" />
-                            </button>
-                            {/* Dropdown menu would go here */}
-                          </div>
+                          <button
+                            onClick={() => handleCampaignAction(campaign.id, 'delete')}
+                            className="p-2 hover:bg-red-500/10 text-red-400 hover:text-red-300 rounded-lg transition-all"
+                            title="Delete campaign"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
