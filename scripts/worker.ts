@@ -100,6 +100,7 @@ export const worker = new Worker<SendJob>(
     const message = await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUTBOUND', content: step.body, sentAt: new Date() } });
 
     const sendRes = await universalSender.sendEmail({ userId: campaign.userId, to: contact.email, toName: contact.name, subject: step.subject, body: step.body, messageId: message.id, contactId: contact.id, fromAccountId: (campaign as any).fromAccountId });
+    console.log(`[worker] send result traceId=${traceId} success=${sendRes.success}${sendRes.error ? ` error=${sendRes.error}` : ''}`);
 
     await prisma.message.update({ where: { id: message.id }, data: { deliveredAt: sendRes.success ? new Date() : null } });
 
