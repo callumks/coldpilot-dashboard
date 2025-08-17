@@ -132,8 +132,9 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
             body: { contentType: "HTML", content: body },
             toRecipients: [{ emailAddress: { address: to, name: toName } }],
             replyTo: params.fromEmail ? [{ emailAddress: { address: params.fromEmail } }] : undefined,
+            // Microsoft Graph only permits custom internetMessageHeaders that start with 'x-' or 'X-'
             internetMessageHeaders: [
-              { name: "List-Unsubscribe", value: `<mailto:unsubscribe@${(to.split('@')[1]||'example.com')}>` }
+              { name: "x-list-unsubscribe", value: `<mailto:unsubscribe@${(to.split('@')[1]||'example.com')}>` }
             ]
           },
           saveToSentItems: true,
