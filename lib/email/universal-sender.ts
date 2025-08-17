@@ -141,10 +141,7 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
             body: { contentType: "HTML", content: htmlBody },
             toRecipients: [{ emailAddress: { address: to, name: toName } }],
             replyTo: params.fromEmail ? [{ emailAddress: { address: params.fromEmail } }] : undefined,
-            // Microsoft Graph only permits custom internetMessageHeaders that start with 'x-' or 'X-'
-            internetMessageHeaders: [
-              { name: "x-list-unsubscribe", value: `<mailto:unsubscribe@${(to.split('@')[1]||'example.com')}>` }
-            ]
+            // No custom headers to avoid any Exchange content conversion side-effects (e.g., TNEF/winmail.dat)
           },
           saveToSentItems: true,
         }),
