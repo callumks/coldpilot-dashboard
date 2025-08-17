@@ -62,6 +62,7 @@ export const worker = new Worker<SendJob>(
   QUEUE_NAME,
   async (job) => {
     const { campaignId, contactId, stepNumber, traceId } = job.data;
+    console.log(`[worker] received job id=${job.id} traceId=${traceId} campaign=${campaignId} contact=${contactId} step=${stepNumber}`);
 
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
     if (!campaign || campaign.status !== 'ACTIVE') {
