@@ -108,12 +108,18 @@ const Campaigns: React.FC = () => {
       if (action === 'resume') {
         const res = await fetch('/api/campaigns', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaignId, status: 'ACTIVE' }) });
         if (!res.ok) throw new Error((await res.json().catch(() => ({} as any)))?.error || 'Resume failed');
+        // Best-effort: ensure audience assigned then trigger run
+        fetch('/api/campaigns/assign-contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ campaignId }) }).catch(() => {});
+        fetch('/api/cron/campaigns').catch(() => {});
         await fetchCampaigns();
         return;
       }
       if (action === 'launch') {
         const res = await fetch('/api/campaigns', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaignId, status: 'ACTIVE' }) });
         if (!res.ok) throw new Error((await res.json().catch(() => ({} as any)))?.error || 'Launch failed');
+        // Best-effort: ensure audience assigned then trigger run
+        fetch('/api/campaigns/assign-contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ campaignId }) }).catch(() => {});
+        fetch('/api/cron/campaigns').catch(() => {});
         await fetchCampaigns();
         return;
       }
