@@ -59,6 +59,19 @@ async function isWithinWindow(campaign: any) {
   return hhmm >= s && hhmm <= e;
 }
 
+function personalizeContent(template: string, contact: any): string {
+  if (!template) return '';
+  const firstName = (contact.name || '').split(' ')[0] || contact.name || '';
+  const lastName = (contact.name || '').split(' ').slice(1).join(' ') || '';
+  return template
+    .replace(/\[firstName\]/g, firstName)
+    .replace(/\[lastName\]/g, lastName)
+    .replace(/\[name\]/g, contact.name || '')
+    .replace(/\[company\]/g, contact.company || 'your company')
+    .replace(/\[email\]/g, contact.email || '')
+    .replace(/\[position\]/g, contact.position || '');
+}
+
 export const worker = new Worker<SendJob>(
   QUEUE_NAME,
   async (job) => {
@@ -97,17 +110,20 @@ export const worker = new Worker<SendJob>(
     const step = await prisma.campaignStep.findFirst({ where: { campaignId, stepNumber } });
     if (!contact || !step) return;
 
+    const personalizedSubject = personalizeContent(step.subject, contact);
+    const personalizedBody = personalizeContent(step.body, contact);
+
     // Create conversation if needed
     let convo = await prisma.conversation.findFirst({ where: { contactId: contact.id, campaignId } });
     if (!convo) {
-      convo = await prisma.conversation.create({ data: { contactId: contact.id, campaignId, userId: campaign.userId, subject: step.subject, status: 'SENT', lastMessageAt: new Date(), unreadCount: 0 } });
+      convo = await prisma.conversation.create({ data: { contactId: contact.id, campaignId, userId: campaign.userId, subject: personalizedSubject, status: 'SENT', lastMessageAt: new Date(), unreadCount: 0 } });
     }
 
     // Create message record
-    const message = await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUTBOUND', content: step.body, sentAt: new Date() } });
+    const message = await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUTBOUND', content: personalizedBody, sentAt: new Date() } });
 
     console.log(`[worker] sending traceId=${traceId} to=${contact.email}`);
-    const sendRes = await universalSender.sendEmail({ userId: campaign.userId, to: contact.email, toName: contact.name, subject: step.subject, body: step.body, messageId: message.id, contactId: contact.id, fromAccountId: (campaign as any).fromAccountId });
+    const sendRes = await universalSender.sendEmail({ userId: campaign.userId, to: contact.email, toName: contact.name, subject: personalizedSubject, body: personalizedBody, messageId: message.id, contactId: contact.id, fromAccountId: (campaign as any).fromAccountId });
     console.log(`[worker] send result traceId=${traceId} success=${sendRes.success}${sendRes.error ? ` error=${sendRes.error}` : ''}`);
 
     await prisma.message.update({ where: { id: message.id }, data: { deliveredAt: sendRes.success ? new Date() : null } });
