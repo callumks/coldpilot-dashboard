@@ -28,6 +28,7 @@ export type SendJob = {
   contactId: string;
   stepNumber: number;
   fromAccountId?: string;
+  force?: boolean;
 };
 
 export const sendQueue = new Queue<SendJob>(QUEUE_NAME, {
@@ -75,14 +76,20 @@ export const worker = new Worker<SendJob>(
       const next = new Date();
       next.setHours( (campaign.sendingWindow as any)?.start?.split(':')[0] || 9, 0, 0, 0);
       await job.moveToDelayed(next.getTime() + jitter(300));
+      console.log(`[worker] out of window traceId=${traceId} rescheduled`);
       return;
     }
 
     // Idempotency via SendAttempt unique
-    try {
-      await (prisma as any).sendAttempt.create({ data: { campaignId, contactId, stepNumber } });
-    } catch {
-      return; // already attempted
+    if (!job.data.force) {
+      try {
+        await (prisma as any).sendAttempt.create({ data: { campaignId, contactId, stepNumber } });
+      } catch {
+        console.log(`[worker] duplicate attempt, skipping traceId=${traceId}`);
+        return; // already attempted
+      }
+    } else {
+      console.log(`[worker] FORCE sending traceId=${traceId}`);
     }
 
     // Load contact + step
@@ -99,6 +106,7 @@ export const worker = new Worker<SendJob>(
     // Create message record
     const message = await prisma.message.create({ data: { conversationId: convo.id, direction: 'OUTBOUND', content: step.body, sentAt: new Date() } });
 
+    console.log(`[worker] sending traceId=${traceId} to=${contact.email}`);
     const sendRes = await universalSender.sendEmail({ userId: campaign.userId, to: contact.email, toName: contact.name, subject: step.subject, body: step.body, messageId: message.id, contactId: contact.id, fromAccountId: (campaign as any).fromAccountId });
     console.log(`[worker] send result traceId=${traceId} success=${sendRes.success}${sendRes.error ? ` error=${sendRes.error}` : ''}`);
 

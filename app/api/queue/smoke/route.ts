@@ -33,8 +33,8 @@ export async function GET(_request: NextRequest) {
 
     // Use a unique jobId to bypass BullMQ dedupe for this smoke route
     const uniqueId = `${campaign.id}:${assignment.contactId}:1:${Date.now()}`;
-    await sendQueue.add('send', { campaignId: campaign.id, contactId: assignment.contactId, stepNumber: 1, fromAccountId: (campaign as any).fromAccountId, traceId: uniqueId }, { jobId: uniqueId });
-    return NextResponse.json({ queued: true, campaignId: campaign.id, contactId: assignment.contactId, stepNumber: 1, jobId: uniqueId });
+    await sendQueue.add('send', { campaignId: campaign.id, contactId: assignment.contactId, stepNumber: 1, fromAccountId: (campaign as any).fromAccountId, traceId: uniqueId, force: true }, { jobId: uniqueId });
+    return NextResponse.json({ queued: true, campaignId: campaign.id, contactId: assignment.contactId, stepNumber: 1, jobId: uniqueId, force: true });
   } catch (error) {
     console.error('Smoke enqueue failed', error);
     return NextResponse.json({ error: 'Smoke failed' }, { status: 500 });
