@@ -102,6 +102,20 @@ export const worker = new Worker<SendJob>(
     const sendRes = await universalSender.sendEmail({ userId: campaign.userId, to: contact.email, toName: contact.name, subject: step.subject, body: step.body, messageId: message.id, contactId: contact.id, fromAccountId: (campaign as any).fromAccountId });
 
     await prisma.message.update({ where: { id: message.id }, data: { deliveredAt: sendRes.success ? new Date() : null } });
+
+    // Update aggregate stats so /api/campaigns reflects progress without waiting for cron recompute
+    try {
+      await prisma.campaign.update({
+        where: { id: campaignId },
+        data: {
+          emailsSent: { increment: 1 },
+          ...(sendRes.success ? { emailsDelivered: { increment: 1 } } : {}),
+          updatedAt: new Date(),
+        },
+      });
+    } catch (e) {
+      // best-effort; keep processing
+    }
   },
   {
     connection,
