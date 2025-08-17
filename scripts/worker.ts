@@ -15,6 +15,11 @@ const connection = new IORedis(process.env.REDIS_URL!, {
 });
 const QUEUE_NAME = process.env.QUEUE_NAME || 'campaign_step_send';
 
+// Visibility: log connection and queue info
+console.log(`[worker] starting. queue=${QUEUE_NAME}`);
+connection.on('connect', () => console.log(`[worker] redis connected: ${process.env.REDIS_URL}`));
+connection.on('error', (err) => console.error('[worker] redis error', err));
+
 // BullMQ v5 no longer requires a separate QueueScheduler for delayed jobs
 
 export type SendJob = {
@@ -103,5 +108,10 @@ export const worker = new Worker<SendJob>(
     // For MVP, rely on default attempts/backoff and window checks
   }
 );
+
+// Lifecycle visibility
+worker.on('ready', () => console.log('[worker] ready and listening for jobs'));
+worker.on('completed', (job) => console.log(`[worker] completed job id=${job.id} traceId=${job.data.traceId}`));
+worker.on('failed', (job, err) => console.error(`[worker] job failed id=${job?.id} traceId=${job?.data?.traceId}`, err));
 
 process.on('SIGINT', async () => { await worker.close(); await connection.quit(); process.exit(0); });
