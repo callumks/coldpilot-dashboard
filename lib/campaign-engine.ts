@@ -171,7 +171,9 @@ class CampaignEngine {
        // Enqueue the email via queue worker
        try {
          const { enqueueSend } = await import('../scripts/setup-queue');
+         console.log(`🧵 Enqueue send: campaign=${campaign.id} contact=${contact.id} step=${nextStep.stepNumber}`);
          await enqueueSend({ campaignId: campaign.id, contactId: contact.id, stepNumber: nextStep.stepNumber, fromAccountId: (campaign as any).fromAccountId });
+         console.log(`✅ Enqueued: campaign=${campaign.id} contact=${contact.id} step=${nextStep.stepNumber}`);
        } catch (e) {
          console.error('Queue enqueue failed, falling back to direct send', e);
          const sent = await this.sendCampaignEmail(campaign, contact, nextStep);
