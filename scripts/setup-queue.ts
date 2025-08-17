@@ -9,6 +9,7 @@ export type SendJob = {
   contactId: string;
   stepNumber: number;
   fromAccountId?: string;
+  force?: boolean;
 };
 
 const connection = new IORedis(process.env.REDIS_URL!, {
