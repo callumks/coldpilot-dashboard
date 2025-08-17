@@ -42,6 +42,17 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
     to = params.overrideToEmail || (globalOverride as string);
   }
 
+  // Prepare bodies (preserve line breaks for plain text inputs)
+  const isHtml = /<[^>]+>/.test(body);
+  const escapeHtml = (s: string) => s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  const htmlBody = isHtml ? body : escapeHtml(body).replace(/\r?\n/g, '<br/>');
+  const textBody = isHtml ? body.replace(/<[^>]+>/g, '') : body;
+
   // Enforce per-user daily send limits using Message records
   const rate = await checkDailyRateLimit(userId);
   if (!rate.allowed) {
@@ -61,8 +72,6 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
 
       const boundary = "mixed_" + Math.random().toString(36).slice(2);
       const unsubscribe = `<mailto:unsubscribe@${new URL('https://'+(params.to.split('@')[1]||'example.com')).host}>`;
-      const textBody = body.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-      const htmlBody = body;
       const headers = [
         `To: ${toName ? `${toName} <${to}>` : to}`,
         `Subject: ${subject}`,
@@ -129,7 +138,7 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
         body: JSON.stringify({
           message: {
             subject,
-            body: { contentType: "HTML", content: body },
+            body: { contentType: "HTML", content: htmlBody },
             toRecipients: [{ emailAddress: { address: to, name: toName } }],
             replyTo: params.fromEmail ? [{ emailAddress: { address: params.fromEmail } }] : undefined,
             // Microsoft Graph only permits custom internetMessageHeaders that start with 'x-' or 'X-'
