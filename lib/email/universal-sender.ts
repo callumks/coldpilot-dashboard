@@ -50,8 +50,17 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-  const htmlBody = isHtml ? body : escapeHtml(body).replace(/\r?\n/g, '<br/>');
+  let htmlBody = isHtml ? body : escapeHtml(body).replace(/\r?\n/g, '<br/>');
   const textBody = isHtml ? body.replace(/<[^>]+>/g, '') : body;
+
+  // Append open tracking pixel
+  const pixelUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/api/track/open?m=${encodeURIComponent(params.messageId || '')}`;
+  const pixelTag = `<img src="${pixelUrl}" width="1" height="1" style="display:none" alt=""/>`;
+  if (htmlBody.includes('</body>')) {
+    htmlBody = htmlBody.replace('</body>', `${pixelTag}</body>`);
+  } else {
+    htmlBody += pixelTag;
+  }
 
   // Enforce per-user daily send limits using Message records
   const rate = await checkDailyRateLimit(userId);
