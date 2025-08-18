@@ -186,6 +186,11 @@ class CampaignEngine {
         
        emailsSentToday++;
 
+       // Persist attempt for next-step computation on subsequent runs
+       try {
+         await (prisma as any).sendAttempt.create({ data: { campaignId: campaign.id, contactId: contact.id, stepNumber: nextStep.stepNumber } });
+       } catch {}
+
        // Queue-based throttling; no local delay needed
       }
 
@@ -221,32 +226,13 @@ class CampaignEngine {
 
   // Get the next step for a contact in a campaign
   private async getNextStepForContact(campaign: any, contact: any) {
-    // Find existing conversations for this contact in this campaign
-    const conversation = await prisma.conversation.findFirst({
-      where: {
-        contactId: contact.id,
-        campaignId: campaign.id
-      },
-      include: {
-        messages: {
-          orderBy: { sentAt: 'desc' },
-          take: 1
-        }
-      }
+    // Determine next step based on prior send attempts for this campaign/contact
+    const lastAttempt = await (prisma as any).sendAttempt.findFirst({
+      where: { campaignId: campaign.id, contactId: contact.id },
+      orderBy: { stepNumber: 'desc' }
     });
 
-    let nextStepNumber = 1;
-
-    if (conversation && conversation.messages.length > 0) {
-      // Find what step was last sent
-      const lastMessage = conversation.messages[0];
-      
-      // TODO: Track step number in message or derive from campaign steps
-      // For now, assume step 1 if we have any messages
-      nextStepNumber = 2;
-    }
-
-    // Find the step
+    const nextStepNumber = (lastAttempt?.stepNumber ?? 0) + 1;
     const step = campaign.steps.find((s: any) => s.stepNumber === nextStepNumber);
     return step;
   }
