@@ -334,7 +334,8 @@ const Contacts: React.FC = () => {
         </div>
       ) : contacts.length > 0 ? (
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-white/[0.02] border-b border-white/[0.05]">
                 <tr>
@@ -428,6 +429,33 @@ const Contacts: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden p-4 grid grid-cols-1 gap-3">
+            {contacts.map((contact) => (
+              <div key={contact.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-white font-medium truncate mr-2">{contact.name}</div>
+                  <span className={`px-2 py-0.5 rounded text-xs border ${getStatusColor(contact.status)}`}>{contact.status.replace('_',' ')}</span>
+                </div>
+                <div className="text-xs text-gray-400 mb-2 truncate">{contact.email}</div>
+                <div className="text-sm text-gray-300 mb-3">{contact.company || 'No company'}</div>
+                <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
+                  <Calendar className="h-3 w-3" />
+                  <span>Last: {formatLastContacted(contact.lastContacted)}</span>
+                </div>
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {contact.tags.slice(0,4).map((tag, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-md text-xs">{tag}</span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleEditContact(contact)} className="px-3 py-1.5 rounded bg-white/5 text-gray-300 text-sm">Edit</button>
+                  <button onClick={() => handleMarkContacted(contact.id)} className="px-3 py-1.5 rounded bg-green-500/10 text-green-400 text-sm">Mark Contacted</button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       ) : (
