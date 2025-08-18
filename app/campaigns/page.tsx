@@ -299,7 +299,8 @@ const Campaigns: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-white/[0.02] border-b border-white/[0.05]">
                 <tr>
@@ -435,6 +436,34 @@ const Campaigns: React.FC = () => {
               </tbody>
             </table>
           </div>
+          <div className="md:hidden p-4 grid grid-cols-1 gap-3">
+            {campaigns.map((c) => {
+              const s = getStatusConfig(c.status);
+              return (
+                <div key={c.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-white font-medium truncate mr-2">{c.name}</div>
+                    <span className={`px-2 py-0.5 text-xs rounded ${s.color}`}>{s.label}</span>
+                  </div>
+                  <div className="text-xs text-gray-400 mb-2 line-clamp-2">{c.description || '—'}</div>
+                  <div className="flex items-center justify-between text-sm text-gray-300 mb-3">
+                    <div>Contacts: {c.totalContacts}</div>
+                    <div>Sent: {c.emailsSent}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {c.status==='ACTIVE' ? (
+                      <button onClick={() => handleCampaignAction(c.id, 'pause')} className="px-3 py-1.5 rounded bg-yellow-500/10 text-yellow-400 text-sm">Pause</button>
+                    ) : (
+                      <button onClick={() => handleCampaignAction(c.id, 'resume')} className="px-3 py-1.5 rounded bg-green-500/10 text-green-400 text-sm">Launch</button>
+                    )}
+                    <button onClick={() => handleCampaignAction(c.id, 'edit')} className="px-3 py-1.5 rounded bg-white/5 text-gray-300 text-sm">Edit</button>
+                    <button onClick={() => handleCampaignAction(c.id, 'delete')} className="ml-auto px-3 py-1.5 rounded border border-red-500/30 text-red-300 text-sm">Delete</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          </>
         )}
       </div>
 
