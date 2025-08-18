@@ -75,7 +75,9 @@ export async function GET(request: NextRequest) {
 
     // Determine sort order
     let orderBy: any = { lastMessageAt: 'desc' }; // Default: most recent
-    if (sortBy === 'oldest') {
+    if (sortBy === 'recent') {
+      orderBy = { lastMessageAt: 'desc' };
+    } else if (sortBy === 'oldest') {
       orderBy = { lastMessageAt: 'asc' };
     } else if (sortBy === 'unread') {
       orderBy = [{ unreadCount: 'desc' }, { lastMessageAt: 'desc' }];
