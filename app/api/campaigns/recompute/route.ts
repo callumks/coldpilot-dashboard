@@ -17,11 +17,11 @@ export async function GET(_request: NextRequest) {
 
     for (const c of campaigns) {
       const totalContacts = await prisma.campaignContact.count({ where: { campaignId: c.id } });
-      const messages = await prisma.message.findMany({ where: { conversation: { campaignId: c.id } }, select: { deliveredAt: true, openedAt: true } });
+      const messages = await prisma.message.findMany({ where: { conversation: { campaignId: c.id } }, select: { deliveredAt: true, openedAt: true, direction: true } });
       const emailsSent = messages.length;
       const emailsDelivered = messages.filter(m => !!m.deliveredAt).length;
       const emailsOpened = messages.filter(m => !!m.openedAt).length;
-      const emailsReplied = 0;
+      const emailsReplied = messages.filter(m => m.direction === 'INBOUND').length;
       const openRate = emailsSent > 0 ? (emailsOpened / emailsSent) * 100 : 0;
       const replyRate = emailsSent > 0 ? (emailsReplied / emailsSent) * 100 : 0;
       const bounceRate = 0;

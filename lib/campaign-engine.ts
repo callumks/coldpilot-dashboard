@@ -205,19 +205,24 @@ class CampaignEngine {
   // Check if campaign is in its sending window
   private isInSendingWindow(campaign: any, now: Date): boolean {
     const sendingWindow = campaign.sendingWindow;
+    const tz = campaign.timezone || 'UTC';
+    // Convert now to campaign timezone using Intl (approx by formatting hours/minutes)
+    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false, weekday: 'short' });
+    const parts = fmt.formatToParts(now);
+    const hh = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+    const mm = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+    const wdStr = parts.find(p => p.type === 'weekday')?.value || 'Mon';
+    const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(wdStr);
     
     if (!sendingWindow) return true;
 
     // Check weekdays only setting
     if (sendingWindow.weekdaysOnly) {
-      const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
-      if (dayOfWeek === 0 || dayOfWeek === 6) {
-        return false; // Weekend
-      }
+      if (dow === 0 || dow === 6) return false;
     }
 
-    // Check time window
-    const currentTime = now.getHours() * 100 + now.getMinutes();
+    // Check time window based on localized hours/minutes
+    const currentTime = hh * 100 + mm;
     const startTime = parseInt(sendingWindow.start.replace(':', ''));
     const endTime = parseInt(sendingWindow.end.replace(':', ''));
 

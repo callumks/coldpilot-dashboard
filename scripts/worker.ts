@@ -48,12 +48,16 @@ function jitter(seconds: number) {
 async function isWithinWindow(campaign: any) {
   if (!campaign.sendingWindow) return true;
   const { start, end, weekdaysOnly } = campaign.sendingWindow as any;
+  const tz = (campaign as any).timezone || 'UTC';
   const now = new Date();
-  if (weekdaysOnly) {
-    const d = now.getDay();
-    if (d === 0 || d === 6) return false;
-  }
-  const hhmm = now.getHours() * 100 + now.getMinutes();
+  const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false, weekday: 'short' });
+  const parts = fmt.formatToParts(now);
+  const hh = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+  const mm = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+  const wdStr = parts.find(p => p.type === 'weekday')?.value || 'Mon';
+  const d = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(wdStr);
+  if (weekdaysOnly && (d === 0 || d === 6)) return false;
+  const hhmm = hh * 100 + mm;
   const s = parseInt(String(start).replace(':', ''));
   const e = parseInt(String(end).replace(':', ''));
   return hhmm >= s && hhmm <= e;
