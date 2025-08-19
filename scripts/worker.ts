@@ -97,13 +97,22 @@ export const worker = new Worker<SendJob>(
       return;
     }
 
-    // Idempotency via SendAttempt unique
+    // Idempotency: skip only if an OUTBOUND message already exists for this campaign/contact
+    const existingOutbound = await prisma.message.findFirst({
+      where: { direction: 'OUTBOUND', conversation: { campaignId, contactId } },
+      select: { id: true },
+    });
+    if (existingOutbound) {
+      console.log(`[worker] duplicate (message exists), skipping traceId=${traceId}`);
+      return;
+    }
+
+    // Attempt-level idempotency: create attempt if not forcing. If it already exists but no message, proceed anyway.
     if (!job.data.force) {
       try {
         await (prisma as any).sendAttempt.create({ data: { campaignId, contactId, stepNumber } });
       } catch {
-        console.log(`[worker] duplicate attempt, skipping traceId=${traceId}`);
-        return; // already attempted
+        console.log(`[worker] prior attempt exists without message, proceeding traceId=${traceId}`);
       }
     } else {
       console.log(`[worker] FORCE sending traceId=${traceId}`);
