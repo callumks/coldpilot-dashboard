@@ -29,6 +29,7 @@ export type SendJob = {
   stepNumber: number;
   fromAccountId?: string;
   force?: boolean;
+  ignoreWindow?: boolean;
 };
 
 export const sendQueue = new Queue<SendJob>(QUEUE_NAME, {
@@ -87,9 +88,9 @@ export const worker = new Worker<SendJob>(
       return; // no-op
     }
 
-    // Window check
+    // Window check (skippable for explicit test jobs)
     const inWindow = await isWithinWindow(campaign);
-    if (!inWindow) {
+    if (!inWindow && !job.data.ignoreWindow) {
       const next = new Date();
       next.setHours( (campaign.sendingWindow as any)?.start?.split(':')[0] || 9, 0, 0, 0);
       await job.moveToDelayed(next.getTime() + jitter(300));
