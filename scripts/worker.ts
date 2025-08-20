@@ -169,3 +169,19 @@ worker.on('completed', (job) => console.log(`[worker] completed job id=${job.id}
 worker.on('failed', (job, err) => console.error(`[worker] job failed id=${job?.id} traceId=${job?.data?.traceId}`, err));
 
 process.on('SIGINT', async () => { await worker.close(); await connection.quit(); process.exit(0); });
+
+// Lightweight internal scheduler: ping campaign cron every 5 minutes to ensure automatic processing
+const CRON_URL = process.env.CRON_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.coldpilot.tech';
+async function pingCron() {
+  try {
+    const url = `${CRON_URL.replace(/\/$/, '')}/api/cron/campaigns`;
+    await fetch(url, { method: 'GET' });
+    console.log('[worker] pinged campaign cron');
+  } catch (e) {
+    console.warn('[worker] cron ping failed');
+  }
+}
+
+// Kick off immediately and then every 5 minutes
+pingCron();
+setInterval(pingCron, 5 * 60 * 1000);
