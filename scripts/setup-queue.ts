@@ -23,9 +23,11 @@ const QUEUE_NAME = process.env.QUEUE_NAME || 'campaign_step_send';
 
 export const sendQueue = new Queue<SendJob>(QUEUE_NAME, { connection });
 
-export async function enqueueSend(job: Omit<SendJob, 'traceId'>) {
+export async function enqueueSend(job: Omit<SendJob, 'traceId'>, options?: { delayMs?: number }) {
   const traceId = randomUUID();
   const jobId = `${job.campaignId}:${job.contactId}:${job.stepNumber}`;
-  await sendQueue.add('send', { ...job, traceId }, { jobId });
+  // Allow re-enqueue by removing any stale completed/failed job with same id
+  try { await sendQueue.remove(jobId); } catch {}
+  await sendQueue.add('send', { ...job, traceId }, { jobId, delay: options?.delayMs || 0 });
 }
 

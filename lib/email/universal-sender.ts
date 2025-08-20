@@ -53,6 +53,14 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
   let htmlBody = isHtml ? body : escapeHtml(body).replace(/\r?\n/g, '<br/>');
   const textBody = isHtml ? body.replace(/<[^>]+>/g, '') : body;
 
+  // Basic placeholder normalization (case-insensitive) before sending
+  const normalizePlaceholders = (s: string) =>
+    s
+      .replace(/\[firstname\]/gi, '[firstName]')
+      .replace(/\[lastname\]/gi, '[lastName]')
+      .replace(/\[companyname\]/gi, '[company]');
+  htmlBody = normalizePlaceholders(htmlBody);
+
   // Append open tracking pixel
   const pixelUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/api/track/open?m=${encodeURIComponent(params.messageId || '')}`;
   const pixelTag = `<img src="${pixelUrl}" width="1" height="1" style="display:none" alt=""/>`;

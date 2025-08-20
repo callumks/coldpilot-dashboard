@@ -172,7 +172,9 @@ class CampaignEngine {
        try {
          const { enqueueSend } = await import('../scripts/setup-queue');
          console.log(`🧵 Enqueue send: campaign=${campaign.id} contact=${contact.id} step=${nextStep.stepNumber}`);
-         await enqueueSend({ campaignId: campaign.id, contactId: contact.id, stepNumber: nextStep.stepNumber, fromAccountId: (campaign as any).fromAccountId });
+         // Pace sends to avoid burst: spread within the minute based on current count
+         const spreadMs = Math.min(55000, (emailsSentToday % 30) * 1500);
+         await enqueueSend({ campaignId: campaign.id, contactId: contact.id, stepNumber: nextStep.stepNumber, fromAccountId: (campaign as any).fromAccountId }, { delayMs: spreadMs });
          console.log(`✅ Enqueued: campaign=${campaign.id} contact=${contact.id} step=${nextStep.stepNumber}`);
        } catch (e) {
          console.error('Queue enqueue failed, falling back to direct send', e);
@@ -185,11 +187,6 @@ class CampaignEngine {
        }
         
        emailsSentToday++;
-
-       // Persist attempt for next-step computation on subsequent runs
-       try {
-         await (prisma as any).sendAttempt.create({ data: { campaignId: campaign.id, contactId: contact.id, stepNumber: nextStep.stepNumber } });
-       } catch {}
 
        // Queue-based throttling; no local delay needed
       }
