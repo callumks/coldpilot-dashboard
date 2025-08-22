@@ -172,10 +172,32 @@ class CampaignEngine {
        try {
          const { enqueueSend } = await import('../scripts/setup-queue');
          console.log(`🧵 Enqueue send: campaign=${campaign.id} contact=${contact.id} step=${nextStep.stepNumber}`);
-         // Pace sends to avoid burst: spread within the minute based on current count
-         const spreadMs = Math.min(55000, (emailsSentToday % 30) * 1500);
-         await enqueueSend({ campaignId: campaign.id, contactId: contact.id, stepNumber: nextStep.stepNumber, fromAccountId: (campaign as any).fromAccountId }, { delayMs: spreadMs });
-         console.log(`✅ Enqueued: campaign=${campaign.id} contact=${contact.id} step=${nextStep.stepNumber}`);
+         // Distribute sends across the remaining window instead of bursting at the top of the hour
+         const tz = campaign.timezone || 'UTC';
+         const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false, weekday: 'short' });
+         const parts = fmt.formatToParts(new Date());
+         const nowH = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+         const nowM = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+         const nowHHMM = nowH * 100 + nowM;
+         const startHHMM = parseInt(campaign.sendingWindow?.start?.replace(':', '') || '0000', 10);
+         const endHHMM = parseInt(campaign.sendingWindow?.end?.replace(':', '') || '2359', 10);
+         // Compute minutes remaining in the window today (campaign tz). If right at end, keep at 1 minute to avoid zero.
+         let minutesRemaining: number;
+         if (nowHHMM <= endHHMM) {
+           const nowMinutes = nowH * 60 + nowM;
+           const endMinutes = Math.floor(endHHMM / 100) * 60 + (endHHMM % 100);
+           minutesRemaining = Math.max(1, endMinutes - nowMinutes);
+         } else {
+           // If we somehow got here with time beyond end (race), send within next minute
+           minutesRemaining = 1;
+         }
+         const remainingQuota = Math.max(1, campaign.dailySendLimit - emailsSentToday);
+         const perSendIntervalMs = Math.max(1000, Math.floor((minutesRemaining * 60 * 1000) / remainingQuota));
+         // Schedule each subsequent email at roughly equal intervals with small jitter
+         const jitter = Math.min(30000, Math.floor(perSendIntervalMs * 0.2));
+         const delayMs = (emailsSentToday % remainingQuota) * perSendIntervalMs + Math.floor(Math.random() * jitter);
+         await enqueueSend({ campaignId: campaign.id, contactId: contact.id, stepNumber: nextStep.stepNumber, fromAccountId: (campaign as any).fromAccountId }, { delayMs });
+         console.log(`✅ Enqueued: campaign=${campaign.id} contact=${contact.id} step=${nextStep.stepNumber} delayMs=${delayMs}`);
        } catch (e) {
          console.error('Queue enqueue failed, falling back to direct send', e);
          const sent = await this.sendCampaignEmail(campaign, contact, nextStep);

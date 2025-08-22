@@ -91,10 +91,54 @@ export const worker = new Worker<SendJob>(
     // Window check (skippable for explicit test jobs)
     const inWindow = await isWithinWindow(campaign);
     if (!inWindow && !job.data.ignoreWindow) {
-      const next = new Date();
-      next.setHours( (campaign.sendingWindow as any)?.start?.split(':')[0] || 9, 0, 0, 0);
-      await job.moveToDelayed(next.getTime() + jitter(300));
-      console.log(`[worker] out of window traceId=${traceId} rescheduled`);
+      const tz = (campaign as any).timezone || 'UTC';
+      const { start, end, weekdaysOnly } = (campaign.sendingWindow as any) || {};
+      const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false, weekday: 'short' });
+      const parts = fmt.formatToParts(new Date());
+      const hh = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+      const mm = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+      const wdStr = parts.find(p => p.type === 'weekday')?.value || 'Mon';
+      const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(wdStr);
+
+      const startStr = String(start || '09:00');
+      const startH = parseInt(startStr.split(':')[0] || '9', 10);
+      const startM = parseInt(startStr.split(':')[1] || '0', 10);
+      const endStr = String(end || '17:00');
+      const endH = parseInt(endStr.split(':')[0] || '17', 10);
+      const endM = parseInt(endStr.split(':')[1] || '0', 10);
+
+      const nowMinutes = hh * 60 + mm;
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+
+      let daysToAdd = 0;
+      if (weekdaysOnly) {
+        if (dow === 6) {
+          // Saturday -> Monday
+          daysToAdd = 2;
+        } else if (dow === 0) {
+          // Sunday -> Monday
+          daysToAdd = 1;
+        } else if (nowMinutes > endMinutes) {
+          // after end today
+          daysToAdd = (dow === 5) ? 3 : 1; // Friday -> Monday
+        } else if (nowMinutes < startMinutes) {
+          daysToAdd = 0;
+        }
+      } else {
+        if (nowMinutes > endMinutes) daysToAdd = 1; else daysToAdd = 0;
+      }
+
+      let minutesUntil = 0;
+      if (daysToAdd === 0 && nowMinutes < startMinutes) {
+        minutesUntil = startMinutes - nowMinutes;
+      } else {
+        minutesUntil = (daysToAdd * 24 * 60) + (24 * 60 - nowMinutes) + startMinutes;
+      }
+
+      const delayMs = Math.max(60_000, minutesUntil * 60 * 1000 + jitter(60));
+      await job.moveToDelayed(Date.now() + delayMs);
+      console.log(`[worker] out of window traceId=${traceId} rescheduled delayMs=${delayMs}`);
       return;
     }
 
