@@ -70,17 +70,17 @@ export async function syncGmail({ account, state, since }: { account: any; state
       })();
       if (!contactId) continue; // skip threads not tied to an existing contact
 
+      // Try to attach to an existing conversation for this contact and (if available) campaign
+      const existingConvo = await prisma.conversation.findFirst({ where: { userId: account.userId, contactId }, orderBy: { lastMessageAt: 'desc' } });
+      const convId = existingConvo?.id || `${account.userId}_${threadKey || externalId}`;
+      if (!existingConvo) {
+        await prisma.conversation.create({ data: { id: convId, userId: account.userId, contactId, subject: headers['Subject'] || 'Conversation', status: isOutbound ? 'SENT' : 'REPLIED', lastMessageAt: new Date(), unreadCount: isOutbound ? 0 : 1 } });
+      }
       await prisma.message.create({
         data: {
-          conversation: {
-            connectOrCreate: {
-              where: { id: `${account.userId}_${threadKey || externalId}` },
-              create: { id: `${account.userId}_${threadKey || externalId}`, userId: account.userId, contactId: contactId, subject: headers['Subject'] || 'Conversation', status: 'SENT', lastMessageAt: new Date(), unreadCount: 0 }
-            }
-          },
+          conversation: { connect: { id: convId } },
           direction: direction as any,
           content: '',
-          // omit provider to avoid enum cast issues against legacy text column
           externalId,
           threadKey,
           account: { connect: { id: account.id } },
@@ -88,6 +88,12 @@ export async function syncGmail({ account, state, since }: { account: any; state
           receivedAt: isOutbound ? null : new Date(headers['Date'] || Date.now())
         }
       });
+      // Update conversation aggregates on inbound
+      if (!isOutbound) {
+        try {
+          await prisma.conversation.update({ where: { id: convId }, data: { status: 'REPLIED', unreadCount: { increment: 1 }, lastMessageAt: new Date() } });
+        } catch {}
+      }
       results.push({ externalId });
     }
   }

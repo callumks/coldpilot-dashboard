@@ -101,17 +101,17 @@ export async function syncOutlook({ account, state, since }: { account: any; sta
       const contact = prospect ? await prisma.contact.findFirst({ where: { userId: account.userId, email: prospect } }) : null;
       if (!contact) continue;
 
+      // Attach to most recent conversation for this contact if present
+      const existingConvo = await prisma.conversation.findFirst({ where: { userId: account.userId, contactId: contact.id }, orderBy: { lastMessageAt: 'desc' } });
+      const convId = existingConvo?.id || `${account.userId}_${threadKey || externalId}`;
+      if (!existingConvo) {
+        await prisma.conversation.create({ data: { id: convId, userId: account.userId, contactId: contact.id, subject: m.subject || 'Conversation', status: isOutbound ? 'SENT' : 'REPLIED', lastMessageAt: new Date(), unreadCount: isOutbound ? 0 : 1 } });
+      }
       await prisma.message.create({
         data: {
-          conversation: {
-            connectOrCreate: {
-              where: { id: `${account.userId}_${threadKey || externalId}` },
-              create: { id: `${account.userId}_${threadKey || externalId}`, userId: account.userId, contactId: contact.id, subject: m.subject || 'Conversation', status: 'SENT', lastMessageAt: new Date(), unreadCount: 0 }
-            }
-          },
+          conversation: { connect: { id: convId } },
           direction: direction as any,
           content: '',
-          // omit provider to avoid enum cast issues against legacy text column
           externalId,
           threadKey,
           account: { connect: { id: account.id } },
@@ -119,6 +119,9 @@ export async function syncOutlook({ account, state, since }: { account: any; sta
           receivedAt: isOutbound ? null : new Date(m.receivedDateTime || Date.now())
         }
       });
+      if (!isOutbound) {
+        try { await prisma.conversation.update({ where: { id: convId }, data: { status: 'REPLIED', unreadCount: { increment: 1 }, lastMessageAt: new Date() } }); } catch {}
+      }
       imported++;
     }
   }
