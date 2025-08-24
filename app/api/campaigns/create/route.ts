@@ -61,6 +61,13 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const campaignData: CreateCampaignRequest = await request.json();
+    // Backward-compatible defaults
+    if (!campaignData.timezone) {
+      campaignData.timezone = 'UTC';
+    }
+    if (!campaignData.sendingWindow) {
+      campaignData.sendingWindow = { start: '09:00', end: '17:00', weekdaysOnly: true } as any;
+    }
 
     // Validate required fields
     if (!campaignData.name || !campaignData.name.trim()) {

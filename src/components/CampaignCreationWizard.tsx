@@ -109,6 +109,16 @@ const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
     }
   }, []);
 
+  // Detect browser timezone as default
+  useEffect(() => {
+    try {
+      const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (detectedTz && typeof detectedTz === 'string') {
+        setFormData(prev => ({ ...prev, timezone: prev.timezone || detectedTz }));
+      }
+    } catch {}
+  }, []);
+
   // Mock contact tags for targeting
   const availableTags = [
     'Tech', 'SaaS', 'Startup', 'Enterprise', 'Founder', 'CEO', 'CTO', 'VP Sales',
@@ -601,6 +611,35 @@ Best regards,
         <h4 className="font-medium text-white mb-4">Sending Settings</h4>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Timezone */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Timezone
+            </label>
+            <select
+              value={formData.timezone}
+              onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {(((Intl as any).supportedValuesOf && (Intl as any).supportedValuesOf('timeZone')) || [
+                'UTC',
+                'America/New_York',
+                'America/Chicago',
+                'America/Denver',
+                'America/Los_Angeles',
+                'Europe/London',
+                'Europe/Paris',
+                'Europe/Berlin',
+                'Asia/Singapore',
+                'Asia/Tokyo',
+                'Australia/Sydney',
+              ]).map((tz: string) => (
+                <option key={tz} value={tz} className="bg-[#1a1a1a]">{tz}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Used to interpret your sending window.</p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Daily Send Limit
