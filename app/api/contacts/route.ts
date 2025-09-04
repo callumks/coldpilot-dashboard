@@ -90,10 +90,10 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     });
 
-    // Get lead source statistics
+    // Get lead source statistics using the SAME filters as contacts
     const leadSourceStats = await prisma.contact.groupBy({
       by: ['source'],
-      where: { userId: user.id },
+      where: whereConditions,
       _count: { source: true }
     });
 
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       leadSources.push({
         source: 'coldpilot sourced',
         count: coldpilotCount,
-        percentage: totalContacts > 0 ? Math.round((coldpilotCount / totalContacts) * 100) : 0
+        percentage: totalContacts > 0 ? Math.min(100, Math.max(0, Math.round((coldpilotCount / totalContacts) * 100))) : 0
       });
     }
     
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
       leadSources.push({
         source: source,
         count: count,
-        percentage: totalContacts > 0 ? Math.round((count / totalContacts) * 100) : 0
+        percentage: totalContacts > 0 ? Math.min(100, Math.max(0, Math.round((count / totalContacts) * 100))) : 0
       });
     });
 

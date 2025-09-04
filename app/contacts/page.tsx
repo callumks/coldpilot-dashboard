@@ -248,6 +248,7 @@ const Contacts: React.FC = () => {
         <h3 className="text-lg font-medium text-white mb-4">Leads by Source</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {leadSources.map((source, index) => {
+            const pct = Number.isFinite(source.percentage) ? Math.min(100, Math.max(0, source.percentage)) : 0;
             const displayName = source.source === 'coldpilot sourced' ? 'coldpilot sourced' : 
                                source.source === 'MANUAL' ? 'Manual' : 
                                source.source === 'EMAIL' ? 'Email' :
@@ -258,13 +259,13 @@ const Contacts: React.FC = () => {
               <div key={index} className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-gray-400">{displayName}</span>
-                  <span className="text-xs text-gray-500">{source.percentage}%</span>
+                  <span className="text-xs text-gray-500">{pct}%</span>
                 </div>
                 <p className="text-2xl font-semibold text-white">{source.count}</p>
                 <div className="mt-3 w-full bg-gray-800 rounded-full h-1">
                   <div 
                     className="bg-blue-500 h-1 rounded-full"
-                    style={{ width: `${source.percentage}%` }}
+                    style={{ width: `${pct}%` }}
                   ></div>
                 </div>
               </div>
