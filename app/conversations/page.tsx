@@ -26,15 +26,25 @@ const Conversations: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [contactIdParam, setContactIdParam] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('recent');
 
+  // Read contactId from URL on mount for preselection
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const cid = params.get('contactId');
+      if (cid) setContactIdParam(cid);
+    } catch {}
+  }, []);
+
   // Fetch conversations from API
   useEffect(() => {
     fetchConversations();
-  }, [searchQuery, activeFilter, sortBy]);
+  }, [searchQuery, activeFilter, sortBy, contactIdParam]);
 
   const fetchConversations = async () => {
     try {
@@ -46,6 +56,7 @@ const Conversations: React.FC = () => {
       if (searchQuery) params.append('search', searchQuery);
       if (activeFilter !== 'All') params.append('filter', activeFilter);
       if (sortBy) params.append('sortBy', sortBy);
+      if (contactIdParam) params.append('contactId', contactIdParam);
       
       const response = await fetch(`/api/conversations?${params.toString()}`);
       if (!response.ok) {
@@ -55,6 +66,10 @@ const Conversations: React.FC = () => {
       const data = await response.json();
       if (data.success) {
         setConversations(data.conversations);
+        // If coming from a contact, auto-select the first conversation for that contact
+        if (contactIdParam && data.conversations.length > 0) {
+          setSelectedThreadId(data.conversations[0].id);
+        }
       } else {
         throw new Error(data.error || 'Unknown error');
       }

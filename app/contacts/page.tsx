@@ -91,7 +91,7 @@ const Contacts: React.FC = () => {
   };
 
   const handleMessageContact = (contact: any) => {
-    alert(`🚀 Messaging ${contact.name} coming soon! This will integrate with our campaign system.`);
+    window.location.href = `/conversations?contactId=${encodeURIComponent(contact.id)}`;
   };
 
   const handleDeleteContact = (contactId: string) => {
@@ -454,6 +454,7 @@ const Contacts: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button onClick={() => handleEditContact(contact)} className="px-3 py-1.5 rounded bg-white/5 text-gray-300 text-sm">Edit</button>
                   <button onClick={() => handleMarkContacted(contact.id)} className="px-3 py-1.5 rounded bg-green-500/10 text-green-400 text-sm">Mark Contacted</button>
+                  <button onClick={() => window.location.href = `/conversations?contactId=${encodeURIComponent(contact.id)}`} className="px-3 py-1.5 rounded bg-blue-500/10 text-blue-400 text-sm">Open Conversation</button>
                 </div>
               </div>
             ))}

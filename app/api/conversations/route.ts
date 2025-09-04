@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
     const search = url.searchParams.get('search') || '';
     const filter = url.searchParams.get('filter') || 'All';
     const sortBy = url.searchParams.get('sortBy') || 'recent';
+    const contactId = url.searchParams.get('contactId') || '';
 
     // Build filter conditions
     const whereConditions: any = {
@@ -62,6 +63,11 @@ export async function GET(request: NextRequest) {
           ]
         }}
       ];
+    }
+
+    // Filter by contactId if provided
+    if (contactId) {
+      whereConditions.contactId = contactId;
     }
 
     // Add status filter
