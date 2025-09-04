@@ -566,7 +566,7 @@ const CampaignCreationWizard: React.FC<CampaignCreationWizardProps> = ({
                   <button
                     type="button"
                     onClick={() => generateAIEmailForStep(step.id)}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-md hover:from-purple-600 hover:to-blue-600 transition-all"
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
                   >
                     <Zap className="h-3 w-3" />
                     AI Generate
@@ -920,7 +920,7 @@ Best regards,
           <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
+                <div className="p-2 bg-blue-500 rounded-lg">
                   <Zap className="h-5 w-5 text-white" />
                 </div>
                 <div>
@@ -946,7 +946,7 @@ Best regards,
                   value={aiEmailData.campaignGoal}
                   onChange={(e) => setAIEmailData(prev => ({ ...prev, campaignGoal: e.target.value }))}
                   placeholder="e.g., Book demos for our SaaS platform"
-                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
@@ -959,7 +959,7 @@ Best regards,
                   value={aiEmailData.targetIndustry}
                   onChange={(e) => setAIEmailData(prev => ({ ...prev, targetIndustry: e.target.value }))}
                   placeholder="e.g., SaaS, E-commerce, Healthcare"
-                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
@@ -971,7 +971,7 @@ Best regards,
                   <select
                     value={aiEmailData.tone}
                     onChange={(e) => setAIEmailData(prev => ({ ...prev, tone: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="professional" className="bg-[#1a1a1a]">Professional</option>
                     <option value="casual" className="bg-[#1a1a1a]">Casual</option>
@@ -987,7 +987,7 @@ Best regards,
                   <select
                     value={aiEmailData.emailType}
                     onChange={(e) => setAIEmailData(prev => ({ ...prev, emailType: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="initial_outreach" className="bg-[#1a1a1a]">Initial Outreach</option>
                     <option value="follow_up" className="bg-[#1a1a1a]">Follow-up</option>
@@ -1005,7 +1005,7 @@ Best regards,
                   onChange={(e) => setAIEmailData(prev => ({ ...prev, customInstructions: e.target.value }))}
                   placeholder="Any specific requirements or style preferences..."
                   rows={3}
-                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -1020,7 +1020,7 @@ Best regards,
               <button
                 onClick={handleAIEmailGeneration}
                 disabled={!aiEmailData.campaignGoal || !aiEmailData.targetIndustry}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Zap className="h-4 w-4" />
                 Generate Email

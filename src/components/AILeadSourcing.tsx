@@ -136,7 +136,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
               value={formData.industry}
               onChange={(e) => handleInputChange('industry', e.target.value)}
               placeholder="e.g., SaaS, E-commerce, Healthcare"
-              className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -237,7 +237,7 @@ const AILeadSourcing: React.FC<AILeadSourcingProps> = ({ onLeadsSourced }) => {
                 <span className="text-gray-300 text-sm">Real-time email verification</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <span className="text-gray-300 text-sm">Advanced contact enrichment</span>
               </div>
             </div>

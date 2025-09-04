@@ -35,7 +35,6 @@ const Settings: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
-  const [pendingDomains, setPendingDomains] = useState<Record<string, string>>({});
   const [isUpdatingSync, setIsUpdatingSync] = useState<Record<string, boolean>>({});
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
 
@@ -84,11 +83,6 @@ const Settings: React.FC = () => {
         if (!res.ok) return;
         const data = await res.json();
         setConnectedAccounts(data.accounts || []);
-        const map: Record<string, string> = {};
-        (data.accounts || []).forEach((a: ConnectedAccount) => {
-          map[a.id] = (a.syncState?.excludedDomains || []).join(',');
-        });
-        setPendingDomains(map);
       } catch (e) {
         console.error('Failed to load connected accounts', e);
       } finally {
@@ -326,18 +320,6 @@ const Settings: React.FC = () => {
                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${googleAccount?.syncState?.isFullSyncEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
                     </button>
                   </div>
-                  <input
-                    value={pendingDomains[googleAccount!.id] || ''}
-                    onChange={(e) => setPendingDomains(s => ({ ...s, [googleAccount!.id]: e.target.value }))}
-                    placeholder="excluded domains (comma-separated)"
-                    className="px-2 py-1 bg-[#1a1a1a] border border-gray-700 rounded text-xs text-gray-200"
-                    style={{ width: 240 }}
-                  />
-                  <button
-                    onClick={() => updateSyncSettings(googleAccount!.id, { excludedDomains: (pendingDomains[googleAccount!.id] || '').split(',').map(s => s.trim()).filter(Boolean) })}
-                    disabled={isUpdatingSync[googleAccount!.id]}
-                    className="text-blue-400 hover:text-blue-300 text-xs"
-                  >Save</button>
                   <button
                     onClick={() => runManualSync(googleAccount!.id)}
                     disabled={isUpdatingSync[googleAccount!.id]}
@@ -404,18 +386,6 @@ const Settings: React.FC = () => {
                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${outlookAccount?.syncState?.isFullSyncEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
                     </button>
                   </div>
-                  <input
-                    value={pendingDomains[outlookAccount!.id] || ''}
-                    onChange={(e) => setPendingDomains(s => ({ ...s, [outlookAccount!.id]: e.target.value }))}
-                    placeholder="excluded domains (comma-separated)"
-                    className="px-2 py-1 bg-[#1a1a1a] border border-gray-700 rounded text-xs text-gray-200"
-                    style={{ width: 240 }}
-                  />
-                  <button
-                    onClick={() => updateSyncSettings(outlookAccount!.id, { excludedDomains: (pendingDomains[outlookAccount!.id] || '').split(',').map(s => s.trim()).filter(Boolean) })}
-                    disabled={isUpdatingSync[outlookAccount!.id]}
-                    className="text-blue-400 hover:text-blue-300 text-xs"
-                  >Save</button>
                   <button
                     onClick={() => runManualSync(outlookAccount!.id)}
                     disabled={isUpdatingSync[outlookAccount!.id]}
